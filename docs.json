@@ -15,51 +15,51 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Users",
+        "tab": "Markets",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
               "index",
-              "users/signing-up",
-              "users/making-your-first-prediction"
+              "markets/signing-up",
+              "markets/making-your-first-prediction"
             ]
           },
           {
             "group": "Account Management",
-            "pages": ["users/deposits", "users/withdrawals", "users/portfolio"]
+            "pages": ["markets/deposits", "markets/withdrawals", "markets/portfolio"]
           },
           {
             "group": "Markets",
             "pages": [
-              "users/market-creation",
-              "users/market-types",
-              "users/market-resolution",
-              "users/market-dispute"
+              "markets/market-creation",
+              "markets/market-types",
+              "markets/market-resolution",
+              "markets/market-dispute"
             ]
           },
           {
             "group": "Trading",
             "pages": [
-              "users/trading",
-              "users/order-book",
-              "users/market-orders",
-              "users/limit-orders",
-              "users/trading-fees"
+              "markets/trading",
+              "markets/order-book",
+              "markets/market-orders",
+              "markets/limit-orders",
+              "markets/trading-fees"
             ]
           },
           {
             "group": "Rewards",
-            "pages": ["users/points", "users/leaderboard"]
+            "pages": ["markets/points", "markets/leaderboard"]
           },
           {
             "group": "FAQs",
             "pages": [
-              "users/what-is-a-prediction-market",
-              "users/can-i-cash-out-early",
-              "users/trading-limits",
-              "users/does-hit-have-a-token",
-              "users/does-hit-have-an-api"
+              "markets/what-is-a-prediction-market",
+              "markets/can-i-cash-out-early",
+              "markets/trading-limits",
+              "markets/does-hit-have-a-token",
+              "markets/does-hit-have-an-api"
             ]
           }
         ]

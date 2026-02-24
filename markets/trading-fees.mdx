@@ -8,10 +8,10 @@ Hit uses a maker-taker fee model to encourage liquidity in the order book.
 ### Maker vs Taker Fees
 
 **Maker**
-A maker is a trader who adds liquidity to the [order book](/users/order-book) by placing a [limit order](/users/limit-orders) that doesn't immediately match with an existing order. Makers typically pay **0% fees**.
+A maker is a trader who adds liquidity to the [order book](/markets/order-book) by placing a [limit order](/markets/limit-orders) that doesn't immediately match with an existing order. Makers typically pay **0% fees**.
 
 **Taker**
-A taker is a trader who removes liquidity from the order book by placing an order that immediately matches with an existing order. This includes [market orders](/users/market-orders) and limit orders that cross the spread. Takers may incur fees that scale with market certainty.
+A taker is a trader who removes liquidity from the order book by placing an order that immediately matches with an existing order. This includes [market orders](/markets/market-orders) and limit orders that cross the spread. Takers may incur fees that scale with market certainty.
 
 <Info>
   **Fees are often zero**: Many markets on Hit have 0% fees for both
@@ -75,7 +75,7 @@ Net result: ~495 shares
 
 ### Multiple Price Levels
 
-If your order fills at multiple prices (common with [market orders](/users/market-orders)), each portion is charged at its own price level. The final fee is the sum across all fills.
+If your order fills at multiple prices (common with [market orders](/markets/market-orders)), each portion is charged at its own price level. The final fee is the sum across all fills.
 
 The trading ticket shows an estimated fee before you confirm. The actual fee is calculated based on your final fill prices.
 
@@ -93,10 +93,10 @@ All fees are shown on the trading ticket before you place any order:
 
 **Want to minimize fees?**
 
-- Use [limit orders](/users/limit-orders) that sit in the order book (makers typically pay 0%).
+- Use [limit orders](/markets/limit-orders) that sit in the order book (makers typically pay 0%).
 - Avoid trading at 50% where uncertainty and fees are highest.
 
 **Need immediate execution?**
 
-- [Market orders](/users/market-orders) execute instantly but incur taker fees.
+- [Market orders](/markets/market-orders) execute instantly but incur taker fees.
 - The fee is shown before you confirm.
