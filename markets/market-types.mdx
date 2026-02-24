@@ -7,13 +7,13 @@ Hit offers two types of prediction markets: Simple markets and Linked markets.
 
 ### Simple Markets
 
-Simple markets are binary YES/NO markets with two possible outcomes.
+Simple markets are binary HIT/MISS markets with two possible outcomes.
 
 **Example:** "Will Bitcoin reach \$150,000 by December 31, 2025?"
 
-- YES shares pay \$1.00 if Bitcoin reaches \$150,000
-- NO shares pay \$1.00 if Bitcoin doesn't reach \$150,000
-- YES price + NO price = \$1.00
+- HIT shares pay \$1.00 if Bitcoin reaches \$150,000
+- MISS shares pay \$1.00 if Bitcoin doesn't reach \$150,000
+- HIT price + MISS price = \$1.00
 
 ### Linked Markets
 
@@ -21,7 +21,7 @@ Linked markets (also called multi-outcome markets) connect multiple mutually exc
 
 **Example:** Presidential election with candidates A, B, and C
 
-- Each candidate has a separate YES/NO market
+- Each candidate has a separate HIT/MISS market
 - Only one candidate can win
 - The markets are linked because they're mutually exclusive
 
@@ -35,12 +35,12 @@ Linked markets include an explicit "Other" outcome to ensure all possibilities a
 
 #### Inverse Risk
 
-In linked markets, holding NO positions across multiple outcomes can be converted to YES positions plus USDC because of mathematical equivalence.
+In linked markets, holding MISS positions across multiple outcomes can be converted to HIT positions plus USDC because of mathematical equivalence.
 
-**Example:** Consider a position of 1 NO A and 1 NO B:
+**Example:** Consider a position of 1 MISS A and 1 MISS B:
 
-- If A wins: position worth 1 USDC (NO A pays nothing, NO B pays $1.00)
-- If B wins: position worth 1 USDC (NO A pays $1.00, NO B pays nothing)
-- If C wins: position worth 2 USDC (both NO tokens pay $1.00 each)
+- If A wins: position worth 1 USDC (MISS A pays nothing, MISS B pays $1.00)
+- If B wins: position worth 1 USDC (MISS A pays $1.00, MISS B pays nothing)
+- If C wins: position worth 2 USDC (both MISS tokens pay $1.00 each)
 
-This position is equivalent to 1 USDC + 1 YES C, as both positions have identical value in all scenarios. Hit's infrastructure allows these NO positions to be converted to their equivalent YES positions plus USDC, enabling more efficient trading.
+This position is equivalent to 1 USDC + 1 HIT C, as both positions have identical value in all scenarios. Hit's infrastructure allows these MISS positions to be converted to their equivalent HIT positions plus USDC, enabling more efficient trading.
