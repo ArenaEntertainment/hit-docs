@@ -27,7 +27,11 @@
           },
           {
             "group": "Account Management",
-            "pages": ["markets/deposits", "markets/withdrawals", "markets/portfolio"]
+            "pages": [
+              "markets/deposits",
+              "markets/withdrawals",
+              "markets/portfolio"
+            ]
           },
           {
             "group": "Markets",
@@ -75,16 +79,6 @@
           "anchor": "Hit.com",
           "href": "https://hit.com",
           "icon": "house"
-        },
-        {
-          "anchor": "Terms of Service",
-          "href": "https://www.hit.com/tos",
-          "icon": "file-contract"
-        },
-        {
-          "anchor": "Privacy Policy",
-          "href": "https://www.hit.com/privacy",
-          "icon": "shield-halved"
         },
         {
           "anchor": "Hit on X",
