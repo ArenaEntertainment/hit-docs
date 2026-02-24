@@ -1,4 +1,4 @@
-# Basemarket documentation powered by Mintlify
+# Hit documentation powered by Mintlify
 
 ## Working relationship
 

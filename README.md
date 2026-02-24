@@ -1,12 +1,12 @@
-# Basemarket Documentation
+# Hit Documentation
 
-Official documentation for [Basemarket](https://basemarket.com), a peer-to-peer prediction market powered by Base.
+Official documentation for [Hit](https://hit.com), a peer-to-peer prediction market powered by Base.
 
-**Live Documentation:** [docs.basemarket.com](https://docs.basemarket.com)
+**Live Documentation:** [docs.hit.com](https://docs.hit.com)
 
 ## About
 
-This repository contains the complete documentation for Basemarket, covering:
+This repository contains the complete documentation for Hit, covering:
 
 - **Users Guide**: Trading, deposits, withdrawals, market types, and more
 - **Developer Guide**: API reference and integration guides
@@ -49,8 +49,8 @@ npm i -g mint
 2. Clone this repository:
 
 ```bash
-git clone https://github.com/basemarket/basemarket-docs.git
-cd basemarket-docs
+git clone https://github.com/hit/hit-docs.git
+cd hit-docs
 ```
 
 3. Start the development server:
@@ -128,14 +128,14 @@ Changes merged to the `main` branch are automatically deployed to production via
 
 - [Mintlify Documentation](https://mintlify.com/docs)
 - [Mintlify Components](https://mintlify.com/docs/content/components)
-- [Basemarket Website](https://basemarket.com)
-- [Basemarket on X](https://x.com/PredictOnBase)
+- [Hit Website](https://hit.com)
+- [Hit on X](https://x.com/Hit)
 
 ## Support
 
-For questions about Basemarket itself, reach out:
+For questions about Hit itself, reach out:
 
-- Twitter: [@PredictOnBase](https://x.com/PredictOnBase)
-- Website: [basemarket.com](https://basemarket.com)
+- Twitter: [@Hit](https://x.com/Hit)
+- Website: [hit.com](https://hit.com)
 
 For documentation issues, please open an issue in this repository.

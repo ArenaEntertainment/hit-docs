@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Basemarket Documentation",
+  "name": "Hit Documentation",
   "colors": {
-    "primary": "#144EE1",
-    "light": "#4A7AFF",
-    "dark": "#0D3BB8"
+    "primary": "#FF0003",
+    "light": "#FF4D4D",
+    "dark": "#CC0002"
   },
   "appearance": {
     "default": "dark",
@@ -19,7 +19,11 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["index", "users/signing-up", "users/making-your-first-prediction"]
+            "pages": [
+              "index",
+              "users/signing-up",
+              "users/making-your-first-prediction"
+            ]
           },
           {
             "group": "Account Management",
@@ -54,8 +58,8 @@
               "users/what-is-a-prediction-market",
               "users/can-i-cash-out-early",
               "users/trading-limits",
-              "users/does-basemarket-have-a-token",
-              "users/does-basemarket-have-an-api"
+              "users/does-hit-have-a-token",
+              "users/does-hit-have-an-api"
             ]
           }
         ]
@@ -68,42 +72,42 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Basemarket",
-          "href": "https://basemarket.com",
+          "anchor": "Hit.com",
+          "href": "https://hit.com",
           "icon": "house"
         },
         {
           "anchor": "Terms of Service",
-          "href": "https://www.basemarket.com/tos",
+          "href": "https://www.hit.com/tos",
           "icon": "file-contract"
         },
         {
           "anchor": "Privacy Policy",
-          "href": "https://www.basemarket.com/privacy",
+          "href": "https://www.hit.com/privacy",
           "icon": "shield-halved"
         },
         {
-          "anchor": "Basemarket on X",
-          "href": "https://x.com/PredictOnBase",
+          "anchor": "Hit on X",
+          "href": "https://x.com/Hit",
           "icon": "x-twitter"
         }
       ]
     }
   },
   "logo": {
-    "light": "/logo/basemarket-logo-text-light.svg",
-    "dark": "/logo/basemarket-logo-text-dark.svg"
+    "light": "/logo/hit-logo-text-light.svg",
+    "dark": "/logo/hit-logo-text-dark.svg"
   },
   "navbar": {
     "primary": {
       "type": "button",
       "label": "Go to site",
-      "href": "https://basemarket.com"
+      "href": "https://hit.com"
     }
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/PredictOnBase"
+      "x": "https://x.com/Hit"
     }
   }
 }
