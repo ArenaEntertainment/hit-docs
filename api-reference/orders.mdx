@@ -1,0 +1,289 @@
+---
+title: Orders
+description: Order listing, creation, and cancellation endpoint reference
+---
+
+## List Orders
+
+```text
+GET /api/v1/orders
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | No | Market UUID. |
+| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED`. |
+| `maker` | address string | No | Maker address. |
+| `marketName` | string | No | Case-insensitive partial market name. |
+| `sortBy` | enum string | No | `created_at`, `total`, `amount`, or `filled`. Default `created_at`. |
+| `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
+
+Response type: `Order[]`.
+
+## List Orders Paginated
+
+```text
+GET /api/v1/orders/paginated
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | No | Market UUID. |
+| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED`. |
+| `maker` | address string | No | Maker address. |
+| `marketName` | string | No | Case-insensitive partial market name. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `30`. |
+| `sortBy` | enum string | No | `created_at`, `total`, `amount`, or `filled`. Default `created_at`. |
+| `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
+
+Response type: `Pagination<Order>`.
+
+## Get Order
+
+```text
+GET /api/v1/orders/{id}
+```
+
+**Authentication:** `API key HMAC`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Order UUID. |
+
+Response type: `Order`.
+
+## Create Order
+
+```text
+POST /api/v1/orders
+```
+
+**Authentication:** `API key HMAC`
+
+Request body type: `CreateOrder`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `salt` | string | Yes | Unique uint256 numeric string. Max 78 characters. |
+| `taker` | address string | Yes | Taker address. Use the zero address for open GTC maker orders. |
+| `tokenId` | string | Yes | Outcome token ID as a numeric string. Max 78 characters. |
+| `makerAmount` | string | Yes | Positive integer string in base units. Max 78 characters. |
+| `takerAmount` | string | Yes | Positive integer string in base units. Max 78 characters. |
+| `expiration` | integer | Yes | Unix timestamp in seconds, or `0`. |
+| `feeRateBps` | integer | No | Fee rate in basis points. Range `0` to `10000`. |
+| `side` | integer | Yes | `0` buy, `1` sell. |
+| `signature` | string | No | Client-side EIP-712 order signature. |
+| `orderType` | enum string | Yes | `GTC`, `FOK`, or `FAK`. |
+| `priceUint` | string | No | Server-compatible price integer. |
+
+Response type: `Order`.
+
+## Create Batch Orders
+
+```text
+POST /api/v1/orders/batch
+```
+
+**Authentication:** `API key HMAC`
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `orders` | `CreateOrder[]` | Yes | Orders to create. Minimum `1`, maximum `50`. |
+
+Response type: `CreateBatchOrdersResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `results` | `BatchOrderResult[]` | Yes | Per-order results in request order. |
+
+`BatchOrderResult`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `index` | integer | Yes | Index of the order in the submitted batch. |
+| `success` | boolean | Yes | Whether that order was created. |
+| `orderId` | UUID string | No | Created order UUID when successful. |
+| `error` | string | No | Error message when unsuccessful. |
+
+## Cancel Order
+
+```text
+POST /api/v1/orders/{id}/cancel
+```
+
+**Authentication:** `API key HMAC`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Order UUID. |
+
+Response type: `Order`.
+
+## Delete Order
+
+```text
+DELETE /api/v1/orders/{id}
+```
+
+**Authentication:** `API key HMAC`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Order UUID. |
+
+Response type: `DeleteOrderResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `success` | boolean | Yes | Whether the order was deleted. |
+
+## Cancel Batch Orders
+
+```text
+POST /api/v1/orders/batch-cancel
+```
+
+**Authentication:** `API key HMAC`
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `orderIds` | UUID string[] | Yes | Order UUIDs to cancel. Minimum `1`, maximum `50`. |
+
+Response type: `BatchCancelOrdersResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `results` | `BatchCancelOrderResult[]` | Yes | Per-order cancellation results. |
+
+`BatchCancelOrderResult`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `orderId` | UUID string | Yes | Order UUID. |
+| `success` | boolean | Yes | Whether the order was cancelled. |
+| `error` | string | No | Error message when unsuccessful. |
+
+## Cancel Market Orders
+
+```text
+POST /api/v1/orders/cancel
+```
+
+**Authentication:** `API key HMAC`
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | Yes | Market UUID. |
+
+Response type: `Order[]`.
+
+## Cancel All Orders
+
+```text
+POST /api/v1/orders/cancel-all
+```
+
+**Authentication:** `API key HMAC`
+
+Response type: `CancelAllOrdersResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `clearedMarkets` | UUID string[] | Yes | Market UUIDs with orders successfully cancelled. |
+| `failedMarkets` | UUID string[] | No | Market UUIDs that failed cancellation. Retry these. |
+
+## Get Order Book Events
+
+```text
+GET /api/v1/orders/events
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `30`. |
+| `total` | boolean | No | Include total count. Default `true`. |
+
+Response type: `Pagination<OrderbookEvent>`.
+
+## Order
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Order UUID. |
+| `salt` | string | Yes | Order salt. |
+| `maker` | address string | Yes | Maker address. |
+| `signer` | address string | Yes | Signer address. |
+| `taker` | address string | Yes | Taker address. |
+| `tokenId` | string | Yes | Outcome token ID. |
+| `makerAmount` | number | Yes | Maker amount in base units. |
+| `takerAmount` | number | Yes | Taker amount in base units. |
+| `expiration` | integer | Yes | Unix timestamp in seconds, or `0`. |
+| `nonce` | integer | Yes | Maker nonce. |
+| `feeRateBps` | integer | Yes | Fee rate in basis points. |
+| `side` | integer | Yes | `0` buy, `1` sell. |
+| `signatureType` | integer | Yes | Signature type. |
+| `signature` | string | Yes | EIP-712 signature. |
+| `market` | UUID string | Yes | Market UUID. |
+| `orderType` | enum string | Yes | `GTC`, `FOK`, or `FAK`. |
+| `owner` | UUID string | Yes | Hit user ID that owns the order. |
+| `outcome` | string | Yes | Outcome label. |
+| `status` | enum string | Yes | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED`. |
+| `createdAt` | string (date-time) | Yes | Creation timestamp. |
+| `amount` | number | Yes | Order size in display units. |
+| `price` | number | Yes | Limit price. |
+| `matchedAmount` | number | Yes | Filled amount in display units. |
+| `hash` | string | Yes | Order hash. |
+| `priceUint` | string | Yes | Integer price representation. |
+| `metadata` | object | No | Additional order metadata. |
+
+## OrderbookEvent
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | No | Event UUID. |
+| `name` | string | No | Event name. |
+| `slug` | string | No | Event slug. |
+| `createdAt` | string (date-time) | No | Creation timestamp. |
+| `startDate` | string (date-time) | No | Event start timestamp. |
+| `endDate` | string (date-time) | No | Event end timestamp. |
+| `single` | boolean | No | Whether the event has one market. |
+| `marketsView` | `OrderbookEventMarket[]` | No | Active orderbook markets for the event. |
+
+`OrderbookEventMarket`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | No | Market UUID. |
+| `name` | string | Yes | Market name. |
+| `tokenId1` | string | Yes | Outcome 1 token ID. |
+| `tokenId2` | string | Yes | Outcome 2 token ID. |
+| `outcome1` | string | Yes | Outcome 1 label. |
+| `outcome2` | string | Yes | Outcome 2 label. |
+| `orderFeeRateBps` | integer | Yes | Active order fee rate in basis points. |
+| `passiveOrderFeeRateBps` | integer | Yes | Passive order fee rate in basis points. |

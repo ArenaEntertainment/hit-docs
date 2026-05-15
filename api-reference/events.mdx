@@ -1,0 +1,168 @@
+---
+title: Events
+description: Event discovery and volume endpoint reference
+---
+
+## List Events
+
+```text
+GET /api/v1/events
+```
+
+**Authentication:** `Public`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventStatus` | enum string | No | `DRAFT`, `ACTIVE`, `RESOLVED`, or `ENDED`. |
+| `term` | string | No | Search event names, slugs, and descriptions. |
+| `category` | UUID string | No | Category ID. |
+| `ends` | enum string | No | `TODAY`, `THIS_WEEK`, or `THIS_MONTH`. |
+| `addedWithin` | enum string | No | `LAST_24H`, `LAST_7D`, or `LAST_30D`. |
+| `minLiquidity` | number | No | Minimum USD liquidity. |
+| `maxLiquidity` | number | No | Maximum USD liquidity. |
+| `isSettled` | boolean | No | Filter by market settlement status. |
+| `isResolved` | boolean | No | Filter by market resolution status. |
+| `endDateFrom` | string (date-time) | No | Include events ending on or after this timestamp. |
+| `endDateTo` | string (date-time) | No | Include events ending on or before this timestamp. |
+| `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
+| `protected` | boolean | No | Include protected events. |
+| `single` | boolean | No | `true` for single-market events, `false` for multi-market events. |
+| `sortBy` | enum string | No | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug`, or `liquidity`. |
+| `order` | enum string | No | `ASC` or `DESC`. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `10`. |
+| `total` | boolean | No | Include total count. Default `true`. |
+
+When `sortBy=liquidity`, send `minLiquidity` or `maxLiquidity`.
+
+Response type: `Pagination<Event>`.
+
+## Get Event
+
+```text
+GET /api/v1/events/{id_or_slug}
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id_or_slug` | UUID string or string | Yes | Event UUID or slug. |
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
+
+Response type: `Event`.
+
+## Get Event Volume
+
+```text
+GET /api/v1/events/{id_or_slug}/volume
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id_or_slug` | UUID string or string | Yes | Event UUID or slug. |
+
+Response type: `number`.
+
+## Event
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Event UUID. |
+| `name` | string | Yes | Event name. |
+| `slug` | string | Yes | Event slug. |
+| `description` | string | Yes | Event description. |
+| `createdAt` | string (date-time) | Yes | Creation timestamp. |
+| `createdBy` | UUID string | Yes | Creator user ID. |
+| `updatedAt` | string (date-time) | Yes | Last update timestamp. |
+| `startDate` | string (date-time) | Yes | Event start timestamp. |
+| `endDate` | string (date-time) | Yes | Event end timestamp. |
+| `icon` | string | Yes | Event icon URL. |
+| `eventStatus` | enum string | Yes | `DRAFT`, `ACTIVE`, `RESOLVED`, or `ENDED`. |
+| `protected` | boolean | Yes | Whether the event is protected. |
+| `single` | boolean | Yes | Whether the event has one market. |
+| `isDetermined` | boolean | Yes | Whether the event's winning market has been determined. |
+| `winningMarketId` | UUID string or null | No | Winning market UUID for resolved multi-market events. |
+| `feeBips` | integer or null | No | Event fee in basis points. |
+| `reward` | string | Yes | UMA reward amount. |
+| `proposalBond` | string | Yes | UMA proposal bond amount. |
+| `liveness` | integer | Yes | UMA liveness period in seconds. |
+| `orderFeeRateBps` | integer | Yes | Active order fee rate in basis points. |
+| `passiveOrderFeeRateBps` | integer | Yes | Passive order fee rate in basis points. |
+| `marketId` | string | Yes | On-chain market ID. |
+| `ancillaryData` | string | Yes | UMA ancillary data. |
+| `metadata` | object | No | Optional JSON metadata. |
+| `templateId` | UUID string | No | Template UUID when generated from a template. |
+| `categories` | `Category[]` | No | Event categories. |
+| `markets` | `Market[]` | Yes | Markets in the event. |
+| `priceTargetConfig` | object | No | Price-target configuration when present. |
+| `isInitialized` | boolean | Yes | Whether the event has been initialized on chain. |
+| `totalVolumeUSD` | string | No | Total trade volume across event markets. Present when volume is calculated. |
+| `liquidity` | string | No | Total pending-order liquidity. Present when liquidity is calculated. |
+
+## Market
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Market UUID. |
+| `name` | string | Yes | Market name. |
+| `createdAt` | string (date-time) | Yes | Creation timestamp. |
+| `updatedAt` | string (date-time) | Yes | Last update timestamp. |
+| `chance` | number | Yes | Current market chance. |
+| `status` | enum string | Yes | `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `icon` | string | Yes | Market icon URL. |
+| `tokenId1` | string | Yes | Outcome 1 token ID. |
+| `tokenId2` | string | Yes | Outcome 2 token ID. |
+| `ancillaryData` | string | Yes | UMA ancillary data. |
+| `isInitialized` | boolean | Yes | Whether the market has been initialized. |
+| `conditionId` | string | Yes | Conditional Tokens condition ID. |
+| `questionId` | string | Yes | UMA question ID. |
+| `outcome1` | string | Yes | Outcome 1 label. |
+| `outcome2` | string | Yes | Outcome 2 label. |
+| `orderFeeRateBps` | integer | Yes | Active order fee rate in basis points. |
+| `passiveOrderFeeRateBps` | integer | Yes | Passive order fee rate in basis points. |
+| `tickSize` | string | Yes | Minimum price increment. |
+| `speedBumpDelayMs` | integer | Yes | Taker-order matching delay in milliseconds. |
+| `firstPriceDataAt` | string (date-time) or null | No | First price-history timestamp. |
+| `hasProposedPrice` | boolean | Yes | Whether a UMA price has been proposed. |
+| `isDisputed` | boolean | Yes | Whether the proposed price is disputed. |
+| `isSettled` | boolean | Yes | Whether the UMA request is settled. |
+| `resolvedOnAdapterTimestamp` | integer | Yes | Adapter resolution timestamp. |
+| `isResolved` | boolean | Yes | Whether the market is resolved. |
+| `isRegistered` | boolean | Yes | Whether the market is registered on chain. |
+| `isPaused` | boolean | Yes | Whether the market is paused. |
+| `marketResolvedTo` | string | Yes | Raw resolved outcome value. |
+| `marketId` | string | Yes | On-chain market ID. |
+| `negRisk` | boolean | Yes | Whether the market uses negative-risk resolution. |
+| `questionFlaggedTimestamp` | integer | Yes | Question-flagged timestamp. |
+| `transactionHash` | string | Yes | Creation or registration transaction hash. |
+| `eventId` | UUID string | Yes | Parent event UUID. |
+| `questionIndex` | integer or null | No | Question index for multi-market events. |
+| `tradeVolumeUsd` | string | No | All-time trade volume in USD. |
+| `tradeVolumeUsd24h` | string | No | 24-hour trade volume in USD. |
+
+## Category
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Category UUID. |
+| `name` | string | Yes | Category name. |
+| `createdAt` | string (date-time) | Yes | Creation timestamp. |
+| `createdBy` | UUID string | Yes | Creator user ID. |
+| `updatedAt` | string (date-time) | Yes | Last update timestamp. |
+| `updatedBy` | UUID string or null | No | Last updater user ID. |
+| `active` | boolean | Yes | Whether the category is active. |
+| `position` | integer | Yes | Sort position. |

@@ -1,0 +1,383 @@
+---
+title: WebSockets
+description: Subscribe to Hit order book, event, and user streams with Socket.IO
+---
+
+Hit WebSockets use Socket.IO.
+
+| Namespace | Auth | Use |
+| --- | --- | --- |
+| `/` | Public | Order book snapshots, price changes, event updates |
+| `/user` | API key HMAC | User orders, trades, positions, balances, transactions |
+
+Base URL:
+
+```text
+wss://markets.hit.com
+```
+
+## Feed Examples
+
+<Tabs sync={false}>
+  <Tab title="Market feed">
+    The market feed uses the public `/` namespace. Subscribe to order books by outcome token ID, and subscribe to event updates by event UUID.
+
+    <Tabs sync={false}>
+      <Tab title="TypeScript">
+        ```typescript
+        import { io } from "socket.io-client";
+
+        const tokenIds = [process.env.HIT_TOKEN_ID!];
+        const eventId = process.env.HIT_EVENT_ID;
+
+        const socket = io("wss://markets.hit.com/", {
+          transports: ["websocket"],
+        });
+
+        socket.on("connect", () => {
+          socket.emit("orderbook-market-connect", tokenIds);
+
+          if (eventId) {
+            socket.emit("event-connect", eventId);
+          }
+        });
+
+        socket.on("orderbook", (data: unknown) => {
+          console.log("snapshot", data);
+        });
+
+        socket.on("orderbook-price-change", (data: unknown) => {
+          console.log("delta", data);
+        });
+
+        socket.on("orderbook-error", (data: unknown) => {
+          console.error("order book error", data);
+        });
+
+        socket.on("event-onchain-update", (data: unknown) => {
+          console.log("event update", data);
+        });
+
+        function unsubscribe() {
+          socket.emit("orderbook-market-disconnect", tokenIds);
+
+          if (eventId) {
+            socket.emit("event-disconnect", eventId);
+          }
+        }
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```python
+        import os
+
+        import socketio
+
+
+        token_ids = [os.environ["HIT_TOKEN_ID"]]
+        event_id = os.getenv("HIT_EVENT_ID")
+
+
+        sio = socketio.Client()
+
+
+
+        @sio.event
+        def connect():
+            sio.emit("orderbook-market-connect", token_ids)
+
+            if event_id:
+                sio.emit("event-connect", event_id)
+
+
+        @sio.on("orderbook")
+        def orderbook(data):
+            print("snapshot", data)
+
+
+        @sio.on("orderbook-price-change")
+        def orderbook_price_change(data):
+            print("delta", data)
+
+
+        @sio.on("orderbook-error")
+        def orderbook_error(data):
+            print("order book error", data)
+
+
+        @sio.on("event-onchain-update")
+        def event_onchain_update(data):
+            print("event update", data)
+
+
+        def unsubscribe():
+            sio.emit("orderbook-market-disconnect", token_ids)
+
+            if event_id:
+                sio.emit("event-disconnect", event_id)
+
+
+        sio.connect("wss://markets.hit.com", transports=["websocket"])
+
+        try:
+            sio.wait()
+        except KeyboardInterrupt:
+            unsubscribe()
+            sio.disconnect()
+        ```
+      </Tab>
+
+      <Tab title="Rust">
+        ```rust
+        use rust_socketio::{ClientBuilder, Payload};
+        use serde_json::json;
+        use std::env;
+
+        fn main() -> Result<(), Box<dyn std::error::Error>> {
+            let token_id = env::var("HIT_TOKEN_ID")?;
+            let event_id = env::var("HIT_EVENT_ID").ok();
+
+            let socket = ClientBuilder::new("https://markets.hit.com")
+                .on("orderbook", |payload: Payload, _| {
+                    println!("snapshot: {payload:?}");
+                })
+                .on("orderbook-price-change", |payload: Payload, _| {
+                    println!("delta: {payload:?}");
+                })
+                .on("orderbook-error", |payload: Payload, _| {
+                    eprintln!("order book error: {payload:?}");
+                })
+                .on("event-onchain-update", |payload: Payload, _| {
+                    println!("event update: {payload:?}");
+                })
+                .connect()?;
+
+            socket.emit("orderbook-market-connect", json!([token_id]))?;
+
+            if let Some(event_id) = event_id {
+                socket.emit("event-connect", json!(event_id))?;
+            }
+
+            std::thread::park();
+            Ok(())
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+
+  <Tab title="User feed">
+    The user feed uses the `/user` namespace and requires API key auth. The signature message is:
+
+    ```text
+    timestamp + WEBSOCKET + /user
+    ```
+
+    <Tabs sync={false}>
+      <Tab title="TypeScript">
+        ```typescript
+        import { createHmac } from "node:crypto";
+        import { io } from "socket.io-client";
+
+        function signWs(secret: string, timestamp: string) {
+          return createHmac("sha256", secret)
+            .update(`${timestamp}WEBSOCKET/user`)
+            .digest("hex");
+        }
+
+        const socket = io("wss://markets.hit.com/user", {
+          transports: ["websocket"],
+          timeout: 10000,
+          extraHeaders: {
+            "User-Agent": "Hit-API-Client/1.0",
+            Origin: "https://markets.hit.com",
+          },
+        });
+
+        socket.on("connect", () => {
+          const timestamp = Date.now().toString();
+
+          socket.emit("user-connect", {
+            auth: {
+              apiKey: process.env.HIT_API_KEY!,
+              signature: signWs(process.env.HIT_API_SECRET!, timestamp),
+              timestamp,
+              passphrase: process.env.HIT_API_PASSPHRASE!,
+            },
+          });
+        });
+
+        socket.on("user-authenticated", (response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            throw new Error(response.error ?? "WebSocket authentication failed");
+          }
+
+          socket.emit("initial-data");
+        });
+
+        socket.on("user-order", console.log);
+        socket.on("user-trade", console.log);
+        socket.on("user-positions-update", console.log);
+        socket.on("transaction", console.log);
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```python
+        import hashlib
+        import hmac
+        import os
+        import time
+
+        import socketio
+
+
+        def sign_ws(secret: str, timestamp: str) -> str:
+            message = f"{timestamp}WEBSOCKET/user"
+            return hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+
+        sio = socketio.Client()
+
+
+        @sio.event(namespace="/user")
+        def connect():
+            timestamp = str(int(time.time() * 1000))
+            sio.emit(
+                "user-connect",
+                {
+                    "auth": {
+                        "apiKey": os.environ["HIT_API_KEY"],
+                        "signature": sign_ws(os.environ["HIT_API_SECRET"], timestamp),
+                        "timestamp": timestamp,
+                        "passphrase": os.environ["HIT_API_PASSPHRASE"],
+                    }
+                },
+                namespace="/user",
+            )
+
+
+        @sio.on("user-authenticated", namespace="/user")
+        def authenticated(response):
+            if response.get("success"):
+                sio.emit("initial-data", namespace="/user")
+            else:
+                raise RuntimeError(response.get("error", "WebSocket authentication failed"))
+
+
+        @sio.on("user-order", namespace="/user")
+        def user_order(data):
+            print("order", data)
+
+
+        @sio.on("user-trade", namespace="/user")
+        def user_trade(data):
+            print("trade", data)
+
+
+        sio.connect("wss://markets.hit.com", namespaces=["/user"], transports=["websocket"])
+        sio.wait()
+        ```
+      </Tab>
+
+      <Tab title="Rust">
+        ```rust
+        use hmac::{Hmac, Mac};
+        use rust_socketio::{ClientBuilder, Payload};
+        use serde_json::json;
+        use sha2::Sha256;
+        use std::env;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        type HmacSha256 = Hmac<Sha256>;
+
+        fn timestamp_ms() -> String {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system clock before unix epoch")
+                .as_millis()
+                .to_string()
+        }
+
+        fn sign_ws(secret: &str, timestamp: &str) -> String {
+            let message = format!("{}WEBSOCKET/user", timestamp);
+            let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("hmac accepts any key");
+            mac.update(message.as_bytes());
+            hex::encode(mac.finalize().into_bytes())
+        }
+
+        fn main() -> Result<(), Box<dyn std::error::Error>> {
+            let socket = ClientBuilder::new("https://markets.hit.com")
+                .namespace("/user")
+                .on("user-authenticated", |payload: Payload, _| {
+                    println!("authenticated: {payload:?}");
+                })
+                .on("user-order", |payload: Payload, _| {
+                    println!("order: {payload:?}");
+                })
+                .on("user-trade", |payload: Payload, _| {
+                    println!("trade: {payload:?}");
+                })
+                .connect()?;
+
+            let timestamp = timestamp_ms();
+            socket.emit(
+                "user-connect",
+                json!({
+                    "auth": {
+                        "apiKey": env::var("HIT_API_KEY")?,
+                        "signature": sign_ws(&env::var("HIT_API_SECRET")?, &timestamp),
+                        "timestamp": timestamp,
+                        "passphrase": env::var("HIT_API_PASSPHRASE")?
+                    }
+                }),
+            )?;
+
+            socket.emit("initial-data", json!({}))?;
+            std::thread::park();
+            Ok(())
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+</Tabs>
+
+## Events
+
+Public events:
+
+| Event | Direction | Payload |
+| --- | --- | --- |
+| `ping` | Client to server | `{}` |
+| `pong` | Server to client | `{}` |
+| `orderbook-market-connect` | Client to server | Array of token IDs |
+| `orderbook-market-disconnect` | Client to server | Array of token IDs |
+| `orderbook` | Server to client | Order book snapshot |
+| `orderbook-price-change` | Server to client | Price level changes |
+| `orderbook-error` | Server to client | Snapshot or stream error |
+| `event-connect` | Client to server | Event UUID |
+| `event-disconnect` | Client to server | Event UUID |
+| `event-onchain-update` | Server to client | Market or event status update |
+| `tick-size-change` | Server to client | Tick size update |
+
+User events:
+
+| Event | Direction | Payload |
+| --- | --- | --- |
+| `user-connect` | Client to server | API key auth payload |
+| `user-authenticated` | Server to client | `{ "success": boolean, "error"?: string }` |
+| `user-disconnect` | Client to server | No payload |
+| `initial-data` | Client to server | No payload |
+| `initial-shares-by-market` | Client to server | Market UUID |
+| `shares-by-market-disconnect` | Client to server | No payload |
+| `user-order` | Server to client | User order update |
+| `user-trade` | Server to client | User trade update |
+| `user-positions-update` | Server to client | Position update |
+| `collateral-balance` | Server to client | Proxy wallet collateral balance |
+| `collateral-balance-eoa` | Server to client | EOA collateral balance |
+| `transaction` | Server to client | Transaction update |
+| `user-mp-update` | Server to client | Rewards update |
+| `user-mp-claim-update` | Server to client | Rewards claim update |
+| `order-speed-bump-pending` | Server to client | Order delayed before matching |

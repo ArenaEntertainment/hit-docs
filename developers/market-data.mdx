@@ -1,0 +1,207 @@
+---
+title: Market Data
+description: Discover markets and read prices, order books, history, and resolution status
+---
+
+Most market data is public and can be read without authentication.
+
+## Discover Active Markets
+
+Use `GET /events` to find active events and markets.
+
+```bash
+curl 'https://hit.com/api/v1/events?eventStatus=ACTIVE&includeVolume=true&sortBy=liquidity&order=DESC&minLiquidity=100&limit=20'
+```
+
+Common filters:
+
+| Query | Description |
+| --- | --- |
+| `eventStatus` | `DRAFT`, `ACTIVE`, `RESOLVED`, or `ENDED` |
+| `term` | Search event names, slugs, and descriptions |
+| `category` | Category UUID |
+| `ends` | `TODAY`, `THIS_WEEK`, or `THIS_MONTH` |
+| `addedWithin` | `LAST_24H`, `LAST_7D`, or `LAST_30D` |
+| `minLiquidity`, `maxLiquidity` | Filter by USD liquidity |
+| `includeVolume` | Include `tradeVolumeUsd` and `tradeVolumeUsd24h` |
+| `sortBy` | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug`, or `liquidity` |
+| `order` | `ASC` or `DESC` |
+| `page`, `limit`, `total` | Pagination controls |
+
+When sorting by `liquidity`, include `minLiquidity` or `maxLiquidity`.
+
+## Discovery Examples
+
+<Tabs sync={false}>
+<Tab title="TypeScript">
+
+```typescript
+type EventResponse = {
+  data: Array<{
+    id: string;
+    name: string;
+    marketsView: Array<{
+      id: string;
+      name: string;
+      tokenId1: string;
+      tokenId2: string;
+      outcome1: string;
+      outcome2: string;
+      tickSize: string;
+      orderFeeRateBps: number;
+    }>;
+  }>;
+};
+
+const response = await fetch(
+  "https://hit.com/api/v1/events?eventStatus=ACTIVE&includeVolume=true&limit=5",
+);
+
+if (!response.ok) {
+  throw new Error(`${response.status}: ${await response.text()}`);
+}
+
+const events = (await response.json()) as EventResponse;
+const firstMarket = events.data[0]?.marketsView[0];
+
+console.log(firstMarket?.id, firstMarket?.tokenId1, firstMarket?.tokenId2);
+```
+
+</Tab>
+
+<Tab title="Python">
+
+```python
+import requests
+
+response = requests.get(
+    "https://hit.com/api/v1/events",
+    params={
+        "eventStatus": "ACTIVE",
+        "includeVolume": "true",
+        "limit": 5,
+    },
+    timeout=10,
+)
+response.raise_for_status()
+
+events = response.json()["data"]
+first_market = events[0]["marketsView"][0]
+
+print(first_market["id"], first_market["tokenId1"], first_market["tokenId2"])
+```
+
+</Tab>
+
+<Tab title="Rust">
+
+```rust
+use reqwest::blocking::Client;
+use serde_json::Value;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new();
+    let events: Value = client
+        .get("https://hit.com/api/v1/events")
+        .query(&[
+            ("eventStatus", "ACTIVE"),
+            ("includeVolume", "true"),
+            ("limit", "5"),
+        ])
+        .send()?
+        .error_for_status()?
+        .json()?;
+
+    let market = &events["data"][0]["marketsView"][0];
+    println!(
+        "{} {} {}",
+        market["id"], market["tokenId1"], market["tokenId2"]
+    );
+
+    Ok(())
+}
+```
+
+</Tab>
+</Tabs>
+
+## Single Event or Market
+
+| Request | Description |
+| --- | --- |
+| `GET /events/{id_or_slug}` | Event with nested markets |
+| `GET /events/{id_or_slug}?includeVolume=true` | Event plus volume fields |
+| `GET /events/{id_or_slug}/volume` | Total USD event volume |
+| `GET /markets?ids=id1,id2,id3` | Markets by UUID |
+| `GET /markets/{id_or_slug}` | Single market |
+| `GET /markets/{marketId}/volume` | Market volume |
+
+## Order Book
+
+Read the current order book for an outcome token:
+
+```bash
+curl 'https://hit.com/api/v1/order-book/book?token_id=TOKEN_ID'
+```
+
+Response:
+
+```json
+{
+  "market": "market-uuid",
+  "asset_id": "TOKEN_ID",
+  "timestamp": 1778748000000,
+  "bids": [{ "price": "0.62", "size": "25" }],
+  "asks": [{ "price": "0.64", "size": "10" }],
+  "tick_size": "0.01"
+}
+```
+
+## Last Trade Price
+
+```bash
+curl 'https://hit.com/api/v1/order-book/last-trade-price?token_id=TOKEN_ID'
+```
+
+Response:
+
+```json
+{
+  "price": "0.63",
+  "side": "BUY"
+}
+```
+
+## Price History
+
+```bash
+curl 'https://hit.com/api/v1/price-history?token=TOKEN_ID&interval=1D&fidelity=5&limit=288'
+```
+
+| Query | Description |
+| --- | --- |
+| `token` | Outcome token ID |
+| `interval` | `1H`, `6H`, `1D`, `1W`, `1M`, or `ALL` |
+| `fidelity` | Minutes between points, from `1` to `1440` |
+| `page`, `limit`, `total` | Pagination controls |
+| `sortBy` | `timestamp` or `price` |
+| `order` | `ASC` or `DESC` |
+
+## Historical Spreads
+
+```bash
+curl 'https://hit.com/api/v1/historical-data/spreads/MARKET_ID?range=1D&token=1'
+```
+
+| Query | Description |
+| --- | --- |
+| `range` | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL`, or `LATEST` |
+| `token` | `0` for both outcomes, `1` for outcome 1, `2` for outcome 2 |
+
+## Resolution Status
+
+```bash
+curl 'https://hit.com/api/v1/resolution/market/MARKET_ID/status'
+```
+
+This endpoint reads current resolution state and is rate limited to 30 requests per minute.

@@ -1,0 +1,301 @@
+---
+title: Orders
+description: Place, list, cancel, and batch manage orders with the Hit trading API
+---
+
+Order endpoints require API key authentication. See [Authentication](/developers/authentication) for HMAC signing.
+
+## Order Model
+
+Hit accepts low-level order payloads built from outcome token amounts.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `salt` | Yes | Unique numeric string |
+| `taker` | Yes | Usually `0x0000000000000000000000000000000000000000` |
+| `tokenId` | Yes | Outcome token ID from market data |
+| `makerAmount` | Yes | Amount supplied by the maker, in 6-decimal base units |
+| `takerAmount` | Yes | Amount requested from the taker, in 6-decimal base units |
+| `expiration` | Yes | Unix timestamp seconds, or `0` |
+| `side` | Yes | `0` for buy, `1` for sell |
+| `orderType` | Yes | `GTC`, `FOK`, or `FAK` |
+| `feeRateBps` | Client-signed only | Must match the market `orderFeeRateBps` |
+| `signature` | Optional | Include for client-signed orders; omit when using server-side session signer |
+| `priceUint` | Optional | Server-compatible price integer when your client already computes it |
+
+Amounts use 6 decimals:
+
+```text
+1 USDC = 1000000
+1 share = 1000000
+```
+
+For limit orders:
+
+| Side | Meaning |
+| --- | --- |
+| Buy (`side: 0`) | `makerAmount` is USDC, `takerAmount` is shares, price = `makerAmount / takerAmount` |
+| Sell (`side: 1`) | `makerAmount` is shares, `takerAmount` is USDC, price = `takerAmount / makerAmount` |
+
+Limit order prices must be valid multiples of the market `tickSize`.
+
+## Place an Order
+
+<Tabs sync={false}>
+<Tab title="TypeScript">
+
+```typescript
+import { createHmac, randomBytes } from "node:crypto";
+
+type JsonObject = Record<string, unknown>;
+
+function units(value: number) {
+  return Math.round(value * 1_000_000).toString();
+}
+
+function sign(secret: string, timestamp: string, method: string, path: string, body = "") {
+  return createHmac("sha256", secret)
+    .update(`${timestamp}${method.toUpperCase()}${path}${body}`)
+    .digest("hex");
+}
+
+async function request(method: string, path: string, body?: JsonObject) {
+  const fullPath = `/api/v1${path}`;
+  const timestamp = Date.now().toString();
+  const bodyText = body ? JSON.stringify(body) : "";
+
+  const response = await fetch(`https://hit.com${fullPath}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "hit-api-key": process.env.HIT_API_KEY!,
+      "hit-signature": sign(process.env.HIT_API_SECRET!, timestamp, method, fullPath, bodyText),
+      "hit-timestamp": timestamp,
+      "hit-passphrase": process.env.HIT_API_PASSPHRASE!,
+    },
+    body: bodyText || undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${await response.text()}`);
+  }
+
+  return response.json() as Promise<unknown>;
+}
+
+const order = await request("POST", "/orders", {
+  salt: BigInt(`0x${randomBytes(32).toString("hex")}`).toString(),
+  taker: "0x0000000000000000000000000000000000000000",
+  tokenId: process.env.HIT_TOKEN_ID!,
+  makerAmount: units(31), // USDC
+  takerAmount: units(50), // shares
+  expiration: 0,
+  side: 0,
+  orderType: "GTC",
+});
+
+console.log(order);
+```
+
+</Tab>
+
+<Tab title="Python">
+
+```python
+import hashlib
+import hmac
+import json
+import os
+import secrets
+import time
+
+import requests
+
+
+def units(value: float) -> str:
+    return str(round(value * 1_000_000))
+
+
+def sign(secret: str, timestamp: str, method: str, path: str, body: str = "") -> str:
+    message = f"{timestamp}{method.upper()}{path}{body}"
+    return hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+
+def request(method: str, path: str, payload: dict | None = None):
+    full_path = f"/api/v1{path}"
+    timestamp = str(int(time.time() * 1000))
+    body = json.dumps(payload, separators=(",", ":")) if payload else ""
+
+    response = requests.request(
+        method,
+        f"https://hit.com{full_path}",
+        headers={
+            "Content-Type": "application/json",
+            "hit-api-key": os.environ["HIT_API_KEY"],
+            "hit-signature": sign(os.environ["HIT_API_SECRET"], timestamp, method, full_path, body),
+            "hit-timestamp": timestamp,
+            "hit-passphrase": os.environ["HIT_API_PASSPHRASE"],
+        },
+        data=body or None,
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+order = request(
+    "POST",
+    "/orders",
+    {
+        "salt": str(secrets.randbits(256)),
+        "taker": "0x0000000000000000000000000000000000000000",
+        "tokenId": os.environ["HIT_TOKEN_ID"],
+        "makerAmount": units(31),
+        "takerAmount": units(50),
+        "expiration": 0,
+        "side": 0,
+        "orderType": "GTC",
+    },
+)
+
+print(order)
+```
+
+</Tab>
+
+<Tab title="Rust">
+
+```rust
+use hmac::{Hmac, Mac};
+use reqwest::blocking::Client;
+use serde_json::{json, Value};
+use sha2::Sha256;
+use std::env;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+type HmacSha256 = Hmac<Sha256>;
+
+fn timestamp_ms() -> String {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock before unix epoch")
+        .as_millis()
+        .to_string()
+}
+
+fn units(value: f64) -> String {
+    (value * 1_000_000.0).round().to_string()
+}
+
+fn sign(secret: &str, timestamp: &str, method: &str, path: &str, body: &str) -> String {
+    let message = format!("{}{}{}{}", timestamp, method.to_uppercase(), path, body);
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("hmac accepts any key");
+    mac.update(message.as_bytes());
+    hex::encode(mac.finalize().into_bytes())
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new();
+    let path = "/api/v1/orders";
+    let timestamp = timestamp_ms();
+    let payload = json!({
+        "salt": rand::random::<u128>().to_string(),
+        "taker": "0x0000000000000000000000000000000000000000",
+        "tokenId": env::var("HIT_TOKEN_ID")?,
+        "makerAmount": units(31.0),
+        "takerAmount": units(50.0),
+        "expiration": 0,
+        "side": 0,
+        "orderType": "GTC"
+    });
+    let body = serde_json::to_string(&payload)?;
+    let signature = sign(&env::var("HIT_API_SECRET")?, &timestamp, "POST", path, &body);
+
+    let order: Value = client
+        .post(format!("https://hit.com{}", path))
+        .header("Content-Type", "application/json")
+        .header("hit-api-key", env::var("HIT_API_KEY")?)
+        .header("hit-signature", signature)
+        .header("hit-timestamp", timestamp)
+        .header("hit-passphrase", env::var("HIT_API_PASSPHRASE")?)
+        .body(body)
+        .send()?
+        .error_for_status()?
+        .json()?;
+
+    println!("{order:#}");
+    Ok(())
+}
+```
+
+</Tab>
+</Tabs>
+
+The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
+
+## List Orders
+
+```bash
+curl 'https://hit.com/api/v1/orders' \
+  -H 'hit-api-key: API_KEY' \
+  -H 'hit-signature: SIGNATURE' \
+  -H 'hit-timestamp: TIMESTAMP' \
+  -H 'hit-passphrase: API_PASSPHRASE'
+```
+
+Filters:
+
+| Query | Description |
+| --- | --- |
+| `market` | Market UUID |
+| `status` | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED` |
+| `maker` | Maker wallet address |
+| `marketName` | Case-insensitive partial market name |
+| `sortBy` | Order sort field, default `created_at` |
+| `order` | `ASC` or `DESC` |
+
+Use `GET /orders/paginated` for paginated results.
+
+## Cancel Orders
+
+| Request | Description |
+| --- | --- |
+| `POST /orders/{id}/cancel` | Cancel one order and return the updated order |
+| `DELETE /orders/{id}` | Delete one order and return `{ "success": true }` |
+| `POST /orders/batch-cancel` | Cancel up to 50 order IDs |
+| `POST /orders/cancel` | Cancel all orders in one market |
+| `POST /orders/cancel-all` | Cancel all your orders |
+
+Cancel one order:
+
+```typescript
+await request("POST", `/orders/${process.env.HIT_ORDER_ID!}/cancel`);
+```
+
+Cancel a batch:
+
+```typescript
+await request("POST", "/orders/batch-cancel", {
+  orderIds: ["ORDER_UUID_1", "ORDER_UUID_2"],
+});
+```
+
+Cancel all orders in a market:
+
+```typescript
+await request("POST", "/orders/cancel", {
+  market: "MARKET_UUID",
+});
+```
+
+## Positions and Activity
+
+These endpoints also accept API key authentication:
+
+| Request | Description |
+| --- | --- |
+| `GET /markets/user-positions` | Current user positions |
+| `GET /markets/value` | Position value for the current user or a supplied proxy wallet |
+| `GET /markets/user-activity` | User activity feed |
+| `GET /markets/traded-count` | Number of markets traded |
+| `GET /orders/events` | Active order book events |

@@ -1,85 +1,184 @@
 ---
-title: For Developers
-description: API and developer tools coming soon
+title: Developer Quickstart
+description: Start building with Hit market data, trading endpoints, and WebSockets
 ---
 
-## What to Expect
+Hit exposes public market data endpoints, authenticated trading endpoints, and Socket.IO feeds for real-time updates.
 
-When the API launches, you'll be able to:
+Use the **Developers** section for task-based guides. Use the **API Reference** section for endpoint lists, request shapes, and event names.
 
-- **RESTful API**: Standard HTTP endpoints for easy integration
-- **WebSocket Support**: Real-time market data and order book updates
-- **Comprehensive Documentation**: Detailed guides, examples, and SDKs
-- **Rate Limits**: Fair usage policies to ensure reliable service
-- **Authentication**: Secure API key-based authentication
+## Base URLs
 
-<CardGroup cols={2}>
-  <Card title="Market Data" icon="chart-line">
-    Real-time market prices, odds, volume, and liquidity data
-  </Card>
-  <Card title="Trading" icon="arrow-right-arrow-left">
-    Place trades, manage positions, and access order books programmatically
-  </Card>
-  <Card title="Market Information" icon="circle-info">
-    Query available markets, resolution criteria, and historical data
-  </Card>
-  <Card title="Account Management" icon="user">
-    Check balances, view positions, and manage your account via API
-  </Card>
-</CardGroup>
+| Surface | URL |
+| --- | --- |
+| REST API | `https://hit.com/api/v1` |
+| WebSocket | `wss://markets.hit.com` |
 
-## Use Cases
+If you are integrating against staging or local services, keep the same paths and replace only the host.
 
-The Hit API will enable:
+## What You Need
 
-<AccordionGroup>
-  <Accordion title="Trading Bots">
-    Build automated trading strategies based on market data and events
-  </Accordion>
+- A Hit account with a wallet and proxy wallet set up.
+- A trading API key, secret, and passphrase generated from your Hit account.
 
-{" "}
-<Accordion title="Data Analytics">
-  Analyze market trends, probabilities, and trading patterns
-</Accordion>
+<Warning>
+  API secrets and passphrases are only returned when a key is created. Store them
+  immediately in a secrets manager or environment variables.
+</Warning>
 
-{" "}
-<Accordion title="Integration">
-  Embed prediction markets into your website or application
-</Accordion>
+## 1. Fetch Markets
 
-{" "}
-<Accordion title="Portfolio Management">
-  Track positions and performance across multiple markets
-</Accordion>
+Market discovery is public. Start with active events, then pick a market token ID from the returned `marketsView` array.
 
-  <Accordion title="Custom Tools">
-    Create custom dashboards, alerts, and monitoring solutions
-  </Accordion>
-</AccordionGroup>
+```bash
+curl 'https://hit.com/api/v1/events?eventStatus=ACTIVE&includeVolume=true&limit=5'
+```
 
-## Stay Informed
+Useful market fields:
 
-Want to be notified when the API launches?
+| Field | Use |
+| --- | --- |
+| `id` | Market UUID for market-level requests and cancellations |
+| `tokenId1`, `tokenId2` | Outcome token IDs for order book and order placement |
+| `outcome1`, `outcome2` | Human-readable outcome labels |
+| `tickSize` | Valid price increment for limit orders |
+| `orderFeeRateBps` | Fee rate required for client-signed orders |
 
-- **Follow us on X**: [@Hit](https://x.com/Hit) for announcements
-- **Join the waitlist**: Contact us to express interest in API access
-- **Check back here**: This page will be updated with documentation when available
+## 2. Read the Order Book
 
-## Early Access
+Use the token ID for the outcome you want to trade.
 
-If you're building something interesting or have specific integration needs, we'd love to hear from you. Reach out to discuss potential early access or partnership opportunities.
+```bash
+curl 'https://hit.com/api/v1/order-book/book?token_id=TOKEN_ID'
+```
 
-## Questions?
+The response contains price levels for the selected token:
 
-Have questions about the upcoming API or specific integration requirements?
+```json
+{
+  "market": "market-uuid",
+  "asset_id": "TOKEN_ID",
+  "timestamp": 1778748000000,
+  "bids": [{ "price": "0.62", "size": "25" }],
+  "asks": [{ "price": "0.64", "size": "10" }],
+  "tick_size": "0.01"
+}
+```
 
-- Contact our developer support team
-- Follow [@Hit](https://x.com/Hit) for updates
-- Check this page regularly for new information
+## 3. Configure an API Key
 
----
+Trading requests use API key credentials instead of a website session. Store these values as environment variables:
 
-<Info>
-  **Timeline**: We're actively working on the API and will announce availability
-  soon. Follow us on X for the latest updates.
-</Info>
+```bash
+export HIT_API_KEY='API_KEY'
+export HIT_API_SECRET='API_SECRET'
+export HIT_API_PASSPHRASE='API_PASSPHRASE'
+```
+
+See [Authentication](/developers/authentication) for HMAC signing in TypeScript, Python, and Rust.
+
+## 4. Place an Order
+
+Authenticated REST requests require these headers:
+
+```text
+hit-api-key: API_KEY
+hit-signature: HMAC_SIGNATURE
+hit-timestamp: UNIX_TIMESTAMP_MS
+hit-passphrase: API_PASSPHRASE
+```
+
+The signature message is:
+
+```text
+timestamp + method + path + body
+```
+
+For REST requests, `path` includes `/api/v1` and excludes the host and query string.
+
+```typescript
+import { createHmac, randomBytes } from "node:crypto";
+
+const apiUrl = "https://hit.com";
+const apiPrefix = "/api/v1";
+
+type JsonObject = Record<string, unknown>;
+
+function sign(
+  secret: string,
+  timestamp: string,
+  method: string,
+  path: string,
+  body = "",
+) {
+  return createHmac("sha256", secret)
+    .update(`${timestamp}${method.toUpperCase()}${path}${body}`)
+    .digest("hex");
+}
+
+function units(value: number) {
+  return Math.round(value * 1_000_000).toString();
+}
+
+async function authedRequest(
+  method: string,
+  path: string,
+  body?: JsonObject,
+) {
+  const fullPath = `${apiPrefix}${path}`;
+  const timestamp = Date.now().toString();
+  const bodyText = body ? JSON.stringify(body) : "";
+
+  const response = await fetch(`${apiUrl}${fullPath}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "hit-api-key": process.env.HIT_API_KEY!,
+      "hit-signature": sign(process.env.HIT_API_SECRET!, timestamp, method, fullPath, bodyText),
+      "hit-timestamp": timestamp,
+      "hit-passphrase": process.env.HIT_API_PASSPHRASE!,
+    },
+    body: bodyText || undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${await response.text()}`);
+  }
+
+  return response.json() as Promise<unknown>;
+}
+
+const order = await authedRequest("POST", "/orders", {
+  salt: BigInt(`0x${randomBytes(32).toString("hex")}`).toString(),
+  taker: "0x0000000000000000000000000000000000000000",
+  tokenId: process.env.HIT_TOKEN_ID!,
+  makerAmount: units(31), // USDC for a BUY
+  takerAmount: units(50), // shares for a BUY, price = 0.62
+  expiration: 0,
+  side: 0,
+  orderType: "GTC",
+});
+
+console.log(order);
+```
+
+See [Orders](/developers/orders) for order fields, batch orders, and cancellation examples.
+
+## 5. Stream Updates
+
+Public order book streams do not require authentication.
+
+```typescript
+import { io } from "socket.io-client";
+
+const socket = io("wss://markets.hit.com/", { transports: ["websocket"] });
+
+socket.on("connect", () => {
+  socket.emit("orderbook-market-connect", [process.env.HIT_TOKEN_ID!]);
+});
+
+socket.on("orderbook", console.log);
+socket.on("orderbook-price-change", console.log);
+```
+
+User-specific streams require API key authentication after connecting to `/user`. See [WebSockets](/developers/websockets).

@@ -1,0 +1,146 @@
+---
+title: Portfolio
+description: User position, portfolio value, and account activity endpoint reference
+---
+
+## Get User Positions
+
+```text
+GET /api/v1/markets/user-positions
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `status` | enum string | No | Market status: `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `id` | UUID string | No | Market UUID. |
+| `eventId` | UUID string | No | Event UUID. |
+| `title` | string | No | Case-insensitive title filter. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `10`. |
+| `sortBy` | enum string | No | `latest`, `current`, `initial`, or `return`. Default `latest`. |
+| `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
+
+Response type: `UserPositionsResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `first` | integer | Yes | One-based index of the first item on the current page. |
+| `last` | integer | Yes | One-based index of the last item on the current page. |
+| `limit` | integer | Yes | Results per page. |
+| `total` | integer | Yes | Total matching positions. |
+| `data` | `UserPosition[]` | Yes | User positions. |
+
+## Get Position Value
+
+```text
+GET /api/v1/markets/value
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `user` | address string | No | Proxy wallet address. Defaults to the authenticated user. |
+| `markets` | UUID string or UUID string[] | No | Market IDs to filter positions. Send once or as repeated query parameters. |
+
+Response type: `UserPositionValue`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `user` | address string | Yes | Proxy wallet address used for the calculation. |
+| `value` | number | Yes | Total position value in USD. |
+
+## Get User Activity
+
+```text
+GET /api/v1/markets/user-activity
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `term` | string | No | Search term. Max 50 characters. |
+| `name` | string | No | Case-insensitive partial name filter. |
+| `market` | UUID string | No | Market UUID. |
+| `types` | enum string or enum string[] | No | `BUY`, `SELL`, `SPLIT`, `MERGE`, or `REDEEM`. |
+| `fromTimestamp` | integer | No | Unix timestamp in seconds. |
+| `toTimestamp` | integer | No | Unix timestamp in seconds. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `10`. |
+| `total` | boolean | No | Include total count. Default `true`. |
+| `sortBy` | string | No | Sort field. Default `usersactivityview.timestamp`. |
+| `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
+
+Response type: `Pagination<Activity>`.
+
+## Get Markets Traded Count
+
+```text
+GET /api/v1/markets/traded-count
+```
+
+**Authentication:** `API key HMAC`
+
+Response type: `number`.
+
+## UserPosition
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market_uuid` | UUID string | Yes | Market UUID. |
+| `tokenId` | string | Yes | Held outcome token ID. |
+| `acquisitionPrice` | string | Yes | Average acquisition price. |
+| `amount` | string | Yes | Token amount held. |
+| `latest` | string | Yes | Latest token price. |
+| `current` | string | Yes | Current position value. |
+| `initial` | string | Yes | Initial position value. |
+| `return` | string | Yes | Position return. |
+| `icon` | string | No | Market icon URL. |
+| `slug` | string | No | Event slug. |
+| `title` | string | No | Market title. |
+| `status` | enum string | No | `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `conditionId` | string | No | Conditional Tokens condition ID. |
+| `resolvedTo` | string or number | No | Resolution outcome. |
+| `outcome` | string | No | Outcome label. |
+| `outcomeIndex` | integer | No | Outcome index: `0` or `1`. |
+| `orderFeeRateBps` | integer | No | Market fee rate in basis points. |
+
+## Activity
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Activity row UUID. |
+| `name` | string | Yes | Market or event name. |
+| `slug` | string | Yes | Event slug. |
+| `description` | string | Yes | Event description. |
+| `createdAt` | string (date-time) | Yes | Event creation timestamp. |
+| `createdBy` | UUID string | Yes | Event creator user ID. |
+| `updatedAt` | string (date-time) | Yes | Event update timestamp. |
+| `startDate` | string (date-time) | Yes | Event start timestamp. |
+| `endDate` | string (date-time) | Yes | Event end timestamp. |
+| `protected` | boolean | Yes | Whether the event is protected. |
+| `icon` | string | Yes | Icon URL. |
+| `tokenId1` | string | Yes | Outcome 1 token ID. |
+| `tokenId2` | string | Yes | Outcome 2 token ID. |
+| `conditionId` | string | Yes | Conditional Tokens condition ID. |
+| `proxy_address` | address string | Yes | User proxy wallet address. |
+| `outcome1` | string | Yes | Outcome 1 label. |
+| `outcome2` | string | Yes | Outcome 2 label. |
+| `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE`, or `REDEEM`. |
+| `timestamp` | integer | Yes | Activity timestamp in seconds. |
+| `hash` | string | Yes | Transaction hash. |
+| `amount` | number | Yes | Activity amount. |
+| `parent_collection_id` | string | Yes | Conditional Tokens parent collection ID. |
+| `partition` | integer[] | Yes | Conditional Tokens partition. |
+| `isResolved` | boolean | Yes | Whether the market is resolved. |
+| `price` | string | Yes | Activity price. |
+| `fee` | number | Yes | Fee amount. |

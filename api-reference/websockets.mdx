@@ -1,0 +1,398 @@
+---
+title: WebSocket Reference
+description: Socket.IO namespace, client message, and server event reference
+---
+
+Base URL:
+
+```text
+wss://markets.hit.com
+```
+
+For `/user` API key signatures, see [Developer Authentication](/developers/authentication).
+
+## Namespaces
+
+### `/`
+
+**Authentication:** `Public`
+
+Public order book and event data.
+
+### `/user`
+
+**Authentication:** `API key HMAC`
+
+User-specific balances, positions, orders, and trades.
+
+## Public Client Messages
+
+| Event | Payload type | Description |
+| --- | --- | --- |
+| `ping` | `PingPayload` | Health check. |
+| `orderbook-market-connect` | `OrderbookTokenIds` | Subscribe to outcome token IDs. |
+| `orderbook-market-disconnect` | `OrderbookTokenIds` | Unsubscribe from outcome token IDs. |
+| `event-connect` | UUID string or omitted | Subscribe to an event UUID, or all event updates when omitted. |
+| `event-disconnect` | UUID string or omitted | Unsubscribe from an event UUID, or the all-events subscription when omitted. |
+
+`PingPayload`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| none | object | No | Send an empty object. |
+
+### Subscribe to Token Order Books
+
+```text
+orderbook-market-connect
+```
+
+**Authentication:** `Public`
+
+Subscribe to one or more outcome token IDs. Use the market `tokenId1` and `tokenId2` values from market data when you want both sides of a binary market.
+
+Payload type: `OrderbookTokenIds`.
+
+```json
+[
+  "66539633449217268141320411658481757807854020589069449399851604049177251401512"
+]
+```
+
+Socket.IO example:
+
+```ts
+socket.emit("orderbook-market-connect", [
+  "66539633449217268141320411658481757807854020589069449399851604049177251401512",
+]);
+```
+
+On subscribe, the backend joins one order book room per token ID and requests an initial snapshot for each token. Successful snapshots are emitted on `orderbook` as an `OrderBook[]`. Live level changes are emitted later on `orderbook-price-change`.
+
+If an initial snapshot cannot be loaded because of a transient backend failure, the server emits `orderbook-error` with the affected `tokenIds`. Unknown token IDs may produce no snapshot and no error.
+
+### Unsubscribe from Token Order Books
+
+```text
+orderbook-market-disconnect
+```
+
+**Authentication:** `Public`
+
+Stop receiving order book snapshots and deltas for one or more outcome token IDs.
+
+Payload type: `OrderbookTokenIds`.
+
+```json
+[
+  "66539633449217268141320411658481757807854020589069449399851604049177251401512"
+]
+```
+
+Socket.IO example:
+
+```ts
+socket.emit("orderbook-market-disconnect", [
+  "66539633449217268141320411658481757807854020589069449399851604049177251401512",
+]);
+```
+
+The backend does not emit a dedicated unsubscribe confirmation event.
+
+`OrderbookTokenIds`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| none | string[] | Yes | Array of outcome token IDs. |
+
+## Public Server Events
+
+| Event | Payload type | Description |
+| --- | --- | --- |
+| `pong` | `PongPayload` | Ping response. |
+| `app-error` | `AppError` | WebSocket error frame. |
+| `orderbook` | `OrderBook[]` | Order book snapshot. |
+| `orderbook-price-change` | `OrderBookPriceChange` | Price level delta. |
+| `orderbook-error` | `OrderBookError` | Transient snapshot load failure. |
+| `event-onchain-update` | `EventOnchainUpdatePublic` or `EventOnchainUpdateRaw` | On-chain event or market update. |
+| `tick-size-change` | `TickSizeChange` | Market tick size update. |
+| `order-speed-bump-pending` | `OrderSpeedBumpPending` | Order delayed before matching. |
+
+`PongPayload`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| none | object | No | Empty object. |
+
+`AppError`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `message` | string or object | Yes | Error message or structured WebSocket exception payload. |
+
+`OrderBook`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | Yes | Market UUID. |
+| `asset_id` | string | Yes | Outcome token ID. |
+| `hash` | string | Yes | Book state hash. |
+| `timestamp` | integer | Yes | Book timestamp. |
+| `bids` | `OrderBookLevel[]` | Yes | Bid price levels. |
+| `asks` | `OrderBookLevel[]` | Yes | Ask price levels. |
+| `tick_size` | string | Yes | Minimum price increment. |
+
+`OrderBookLevel`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `price` | string | Yes | Price level. |
+| `size` | string | Yes | Available size at the level. |
+
+`OrderBookPriceChange`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_id` | string | Yes | Outcome token ID. |
+| `market` | UUID string | Yes | Market UUID. |
+| `changes` | `OrderBookPriceLevel[]` | Yes | Changed price levels. |
+| `timestamp` | string | Yes | Delta timestamp. |
+| `hash` | string | Yes | Book state hash after the delta. |
+| `tick_size` | string | Yes | Minimum price increment. |
+
+`OrderBookPriceLevel`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `price` | string | Yes | Price level. |
+| `side` | enum string | Yes | `buy` or `sell`. |
+| `size` | string | Yes | New size at the level. |
+
+`OrderBookError`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `tokenIds` | string[] | Yes | Token IDs whose initial snapshot could not be loaded. |
+| `reason` | enum string | Yes | `snapshot_unavailable`. |
+| `retryable` | boolean | Yes | Whether the client should retry. |
+
+`EventOnchainUpdatePublic`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `event_type` | enum string | Yes | `event_onchain_update`. |
+| `eventId` | UUID string | Yes | Event UUID. |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `status` | enum string | Yes | `proposed` or `resolved`. |
+| `timestamp` | integer | No | Block timestamp. |
+
+`EventOnchainUpdateRaw`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | UUID string | Yes | Event UUID. |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `ancillaryData` | string | Yes | UMA ancillary data. |
+| `status` | enum string | Yes | `initialized`, `registered`, `proposed`, `resolved`, `disputed`, `settled`, or `paused`. |
+| `from` | boolean | Yes | Previous on-chain boolean state. |
+| `to` | boolean | Yes | New on-chain boolean state. |
+| `blockTimestamp` | integer | No | Block timestamp. |
+
+`TickSizeChange`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `event_type` | enum string | Yes | `tick_size_change`. |
+| `market` | UUID string | Yes | Market UUID. |
+| `old_tick_size` | string | Yes | Previous tick size. |
+| `new_tick_size` | string | Yes | New tick size. |
+| `timestamp` | integer | Yes | Event timestamp. |
+
+`OrderSpeedBumpPending`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | Yes | Market UUID used as the subscription key. |
+| `orderId` | UUID string | No | Delayed order UUID when supplied by the producer. |
+| additional fields | object | No | The backend forwards any additional producer fields unchanged. |
+
+## User Client Messages
+
+| Event | Payload type | Description |
+| --- | --- | --- |
+| `user-connect` | `UserConnectPayload` | Authenticate and subscribe to the user channel. |
+| `user-disconnect` | empty object | Unsubscribe from the user channel. |
+| `initial-data` | empty object | Request initial collateral balances. |
+| `initial-shares-by-market` | UUID string | Request shares for a market and subscribe to share updates. |
+| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user proxy wallet. |
+
+`UserConnectPayload`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `auth` | `TradingApiKeyAuth` | Yes | API key WebSocket auth payload. |
+
+`TradingApiKeyAuth`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `apiKey` | string | Yes | API key identifier. |
+| `signature` | string | Yes | HMAC-SHA256 signature. |
+| `timestamp` | string | Yes | Unix timestamp in milliseconds. |
+| `passphrase` | string | Yes | API passphrase. |
+
+## User Server Events
+
+| Event | Payload type | Description |
+| --- | --- | --- |
+| `user-authenticated` | `UserAuthenticated` | Authentication result. |
+| `app-error` | `AppError` | WebSocket error frame. |
+| `collateral-balance` | `BalanceUpdate` | Proxy wallet collateral balance. |
+| `collateral-balance-eoa` | `BalanceUpdate` | EOA collateral balance. |
+| `shares-by-market-update` | `MarketSharesUpdate` | Shares update for a subscribed market. |
+| `user-positions-update` | `UserPositionUpdate` | Position update. |
+| `user-order` | `UserOrderEvent[]` | Order update. |
+| `user-trade` | `TradeEvent[]` | Trade update. |
+| `user-mp-update` | `UserMpUpdate` | Rewards accrual update. |
+| `user-mp-claim-update` | `UserMpClaimUpdate` | Rewards claim dispatch update. |
+| `transaction` | `TransactionUpdate` | Transaction status update. |
+
+`UserAuthenticated`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `success` | boolean | Yes | Whether authentication succeeded. |
+| `error` | string | No | Failure reason. |
+
+`BalanceUpdate`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `value` | string | Yes | Token balance. |
+
+`MarketSharesUpdate`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `user` | `SocketUser` | Yes | Authenticated user object. |
+| `token1` | `MarketShareToken` | Yes | Outcome 1 token balance. |
+| `token2` | `MarketShareToken` | Yes | Outcome 2 token balance. |
+
+`MarketShareToken`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | string | Yes | Outcome token ID. |
+| `balance` | string | Yes | Token balance. |
+
+`SocketUser`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Hit user ID. |
+| `evmAddress` | address string | Yes | User EOA address. |
+| `email` | string | No | User email when available. |
+| `proxyWalletAddress` | address string | No | User proxy wallet address. |
+| `proxyWalletSetup` | boolean | Yes | Whether proxy wallet setup is complete. |
+| `createdAt` | string (date-time) | Yes | User creation timestamp. |
+| `updatedAt` | string (date-time) | Yes | Last user update timestamp. |
+| `nonce` | string | Yes | User auth nonce. |
+| `name` | string | Yes | Display name. |
+| `imageURL` | string | Yes | Profile image URL. |
+| `roles` | object[] | No | User roles. |
+
+`UserPositionUpdate`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `tokenId` | string | Yes | Outcome token ID. |
+| `proxyAddress` | address string | Yes | User proxy wallet address. |
+| `amount` | string | Yes | Updated token amount. |
+| `acquisitionPrice` | number | Yes | Acquisition price. |
+| `timestamp` | string (date-time) | Yes | Update timestamp. |
+
+`UserOrderEvent`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `event_type` | enum string | Yes | `order`. |
+| `asset_id` | string | Yes | Outcome token ID. |
+| `associate_trades` | string[] or null | Yes | Associated trade IDs. Currently `null`. |
+| `id` | UUID string | Yes | Order UUID. |
+| `market` | UUID string | Yes | Market UUID. |
+| `order_owner` | UUID string | Yes | Order owner user ID. |
+| `original_size` | string | Yes | Submitted order size. |
+| `outcome` | string | Yes | Outcome label. |
+| `owner` | UUID string | Yes | Order owner user ID. |
+| `price` | string | Yes | Order price. |
+| `side` | enum string | Yes | `buy` or `sell`. |
+| `size_matched` | string | Yes | Matched size. |
+| `timestamp` | string | Yes | Order creation timestamp converted to Unix milliseconds string. |
+| `type` | enum string | Yes | `PLACEMENT`, `UPDATE`, `CANCELLATION`, or `REJECTION`. |
+| `rejection_reason` | string | No | Present when `type=REJECTION`. Known values include `no_fill_available`, `insufficient_balance`, `stale_nonce`, and `onchain_revert:{reason}`. |
+
+`TradeEvent`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `event_type` | enum string | Yes | `trade`. |
+| `asset_id` | string | Yes | Outcome token ID. |
+| `id` | UUID string | Yes | Trade UUID. |
+| `last_update` | string | Yes | Last update timestamp converted to Unix milliseconds string. |
+| `maker_orders` | `TradeMakerOrder[]` | Yes | Maker orders that filled the trade. |
+| `market` | UUID string | Yes | Market UUID. |
+| `match_time` | string | Yes | Match timestamp converted to Unix milliseconds string. |
+| `outcome` | string | Yes | Outcome label. |
+| `owner` | UUID string | Yes | User ID receiving this event. |
+| `price` | string | Yes | Fill price. |
+| `side` | enum string | Yes | `buy` or `sell`. |
+| `trader_side` | enum string | Yes | `MAKER` or `TAKER`. |
+| `size` | string | Yes | Filled size. |
+| `status` | enum string | Yes | `MATCHED`, `MINED`, `CONFIRMED`, or `FAILED`. |
+| `taker_order_id` | UUID string | Yes | Taker order UUID. |
+| `timestamp` | string | Yes | Emit timestamp converted to Unix milliseconds string. |
+| `trade_owner` | UUID string | Yes | Taker owner user ID. |
+| `type` | enum string | Yes | `TRADE`. |
+
+`TradeMakerOrder`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_id` | string | Yes | Outcome token ID. |
+| `matched_amount` | string | Yes | Amount matched from this maker order. |
+| `order_id` | UUID string | Yes | Maker order UUID. |
+| `outcome` | string | Yes | Outcome label. |
+| `owner` | UUID string | Yes | Maker owner user ID. |
+| `price` | string | Yes | Maker fill price. |
+
+`UserMpUpdate`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `userId` | UUID string | Yes | Hit user ID. |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `mpDelta` | string | Yes | MP accrued in the epoch. |
+| `epochDate` | string | Yes | Reward epoch date. |
+| `projectedDailyUsdc` | string | No | Projected daily USDC value. |
+
+`UserMpClaimUpdate`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `userId` | UUID string | Yes | Hit user ID. |
+| `recipientAddress` | address string | No | Claim recipient address. |
+| `claimableMicroUsdc` | string | No | Claimable amount in micro-USDC. |
+| `rowCount` | integer | No | Number of settlement rows included. |
+| `outcome` | enum string | No | `dispatched` or `error`. Missing values should be treated as `dispatched`. |
+| `reason` | string | No | Failure reason, such as `signer-missing`, `executor-failed`, or `task-error`. |
+
+`TransactionUpdate`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `event_type` | enum string | Yes | `transaction`. |
+| `txHash` | string | Yes | Transaction hash. |
+| `status` | enum string | Yes | `success` or `failed`. |
+| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position`, or `multisend`. |
+| `timestamp` | integer | Yes | Emit timestamp in milliseconds. |

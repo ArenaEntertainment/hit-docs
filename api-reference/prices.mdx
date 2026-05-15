@@ -1,0 +1,128 @@
+---
+title: Prices
+description: Order book, last trade, price history, and spread endpoint reference
+---
+
+## Get Order Book
+
+```text
+GET /api/v1/order-book/book
+```
+
+**Authentication:** `Public`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `token_id` | string | Yes | Outcome token ID. |
+
+Response type: `OrderBook`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | Yes | Market UUID. |
+| `asset_id` | string | Yes | Outcome token ID. |
+| `hash` | string | Yes | Book state hash. |
+| `timestamp` | integer | Yes | Book timestamp. |
+| `bids` | `OrderBookLevel[]` | Yes | Bid price levels. |
+| `asks` | `OrderBookLevel[]` | Yes | Ask price levels. |
+| `tick_size` | string | Yes | Minimum price increment. |
+
+`OrderBookLevel`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `price` | string | Yes | Price level. |
+| `size` | string | Yes | Available size at the level. |
+
+## Get Last Trade Price
+
+```text
+GET /api/v1/order-book/last-trade-price
+```
+
+**Authentication:** `Public`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `token_id` | string | Yes | Outcome token ID. |
+
+Response type: `LastTradePrice`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `price` | string | Yes | Last traded price. |
+| `side` | enum string | Yes | `buy` or `sell`. |
+
+## Get Price History
+
+```text
+GET /api/v1/price-history
+```
+
+**Authentication:** `Public`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `token` | string | Yes | Outcome token ID. |
+| `interval` | enum string | Yes | `1H`, `6H`, `1D`, `1W`, `1M`, or `ALL`. |
+| `fidelity` | integer | Yes | Minutes between points. Valid range: `1` to `1440`; max also depends on interval. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `10`, max `1440`. |
+| `total` | boolean | No | Include total count. Default `true`. |
+| `strictFidelity` | boolean | No | Reject fidelity above the interval maximum instead of clamping. Default `false`. |
+| `sortBy` | enum string | No | `timestamp` or `price`. Default `timestamp`. |
+| `order` | enum string | No | `ASC` or `DESC`. Default `ASC`. |
+
+Response type: `PriceHistoryResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page` | integer | Yes | Current page number. |
+| `limit` | integer | Yes | Results per page. |
+| `total` | integer or null | Yes | Total point count when requested. |
+| `pageCount` | integer or null | Yes | Total page count when `total` is available. |
+| `data` | `PriceHistoryPoint[]` | Yes | Price points. |
+
+`PriceHistoryPoint`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `t` | integer | Yes | Unix timestamp in seconds. |
+| `p` | string | Yes | Price value. |
+
+## Get Historical Spreads
+
+```text
+GET /api/v1/historical-data/spreads/{id_or_slug}
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id_or_slug` | UUID string or string | Yes | Market UUID or slug. |
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `range` | enum string | No | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL`, or `LATEST`. Default `1H`. |
+| `token` | integer | No | `0` for both outcomes, `1` for outcome 1, `2` for outcome 2. Default `0`. |
+
+Response type: `HistoricalSpread[]`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `time_group` | string (date-time) | Yes | Aggregated time bucket. |
+| `market_id` | UUID string | Yes | Market UUID. |
+| `token_id` | string | Yes | Outcome token ID. |
+| `chance` | number | Yes | Average chance in the bucket, rounded to one decimal place. |
+| `highest_bid` | number | No | Average highest bid, returned for `range=LATEST`. |

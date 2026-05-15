@@ -1,0 +1,65 @@
+---
+title: API Reference
+description: Endpoint reference for Hit REST and WebSocket APIs
+---
+
+The API Reference is organized by endpoint family. It lists bot-facing paths, parameters, request bodies, response schemas, and WebSocket payloads. For workflow explanations and code examples, use the [Developers](/developers/quickstart) guides.
+
+## Base URLs
+
+| Surface | Type | Base URL |
+| --- | --- | --- |
+| REST API | HTTPS | `https://hit.com/api/v1` |
+| WebSocket | Socket.IO | `wss://markets.hit.com` |
+
+## Auth Labels
+
+| Label | Type | Description |
+| --- | --- | --- |
+| Public | unauthenticated | No credentials are required. |
+| API key HMAC | signed headers | Trading API key headers: `hit-api-key`, `hit-signature`, `hit-timestamp`, and `hit-passphrase`. |
+
+## Sections
+
+| Section | Type | Contents |
+| --- | --- | --- |
+| [Authentication](/api-reference/authentication) | REST and Socket.IO | API key headers and WebSocket auth payload |
+| [Events](/api-reference/events) | REST | Event discovery and event volume |
+| [Markets](/api-reference/markets) | REST | Market lookup, market volume, and public activity |
+| [Prices](/api-reference/prices) | REST | Order books, last trade price, price history, and spreads |
+| [Orders](/api-reference/orders) | REST | Create, list, and cancel orders |
+| [Portfolio](/api-reference/portfolio) | REST | User positions, portfolio value, and account activity |
+| [Resolution](/api-reference/resolution) | REST | Market resolution status |
+| [WebSockets](/api-reference/websockets) | Socket.IO | Namespaces, client messages, and server events |
+
+## Pagination
+
+Paginated REST endpoints return `Pagination<T>`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `first` | integer | Yes | One-based index of the first item on the current page. |
+| `last` | integer | Yes | One-based index of the last item on the current page. |
+| `limit` | integer | Yes | Maximum items returned on the current page. |
+| `total` | integer or null | Yes | Total item count when requested with `total=true`; otherwise `null` on endpoints that support skipping totals. |
+| `data` | `T[]` | Yes | Page items. |
+
+Some newer endpoints return page-number pagination instead:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page` | integer | Yes | Current page number. |
+| `limit` | integer | Yes | Maximum items returned on the current page. |
+| `total` | integer or null | Yes | Total item count when requested. |
+| `pageCount` | integer or null | Yes | Total page count when `total` is available. |
+| `data` | `T[]` | Yes | Page items. |
+
+## Errors
+
+Errors use standard HTTP status codes with a JSON body when a message is available.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `statusCode` | integer | No | HTTP status code. |
+| `message` | string or string[] | Yes | Error message or validation messages. |
+| `error` | string | No | HTTP error label. |

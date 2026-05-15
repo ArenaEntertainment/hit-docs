@@ -8,7 +8,7 @@
     "dark": "#CC0002"
   },
   "appearance": {
-    "default": "dark",
+    "default": "light",
     "strict": false
   },
   "favicon": "/favicon.svg",
@@ -30,6 +30,7 @@
             "pages": [
               "markets/deposits",
               "markets/withdrawals",
+              "markets/moving-funds",
               "markets/portfolio"
             ]
           },
@@ -54,7 +55,7 @@
           },
           {
             "group": "Rewards",
-            "pages": ["markets/points", "markets/leaderboard"]
+            "pages": ["markets/points", "markets/liquidity"]
           },
           {
             "group": "FAQs",
@@ -70,7 +71,63 @@
       },
       {
         "tab": "Developers",
-        "pages": ["developers/quickstart"]
+        "groups": [
+          {
+            "group": "Guides",
+            "pages": [
+              "developers/quickstart",
+              "developers/authentication",
+              "developers/market-data",
+              "developers/orders",
+              "developers/websockets"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication"
+            ]
+          },
+          {
+            "group": "Market Data",
+            "pages": [
+              "api-reference/events",
+              "api-reference/markets",
+              "api-reference/prices",
+              "api-reference/resolution"
+            ]
+          },
+          {
+            "group": "Trading",
+            "pages": [
+              "api-reference/orders",
+              "api-reference/portfolio"
+            ]
+          },
+          {
+            "group": "Realtime",
+            "pages": [
+              "api-reference/websockets"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Casino",
+        "groups": [
+          {
+            "group": "Casino",
+            "pages": [
+              "casino/getting-started"
+            ]
+          }
+        ]
       }
     ],
     "global": {

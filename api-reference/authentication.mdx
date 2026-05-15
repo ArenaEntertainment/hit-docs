@@ -1,0 +1,60 @@
+---
+title: Authentication
+description: API key headers for private trading endpoints and user WebSocket auth
+---
+
+Private trading endpoints use API key HMAC authentication. Public market data endpoints do not require credentials.
+
+For implementation examples in TypeScript, Python, and Rust, see [Developer Authentication](/developers/authentication).
+
+## REST Headers
+
+Include these headers on private REST requests:
+
+| Header | Type | Required | Description |
+| --- | --- | --- | --- |
+| `hit-api-key` | string | Yes | API key identifier. |
+| `hit-signature` | string | Yes | HMAC-SHA256 signature. |
+| `hit-timestamp` | string | Yes | Unix timestamp in milliseconds. |
+| `hit-passphrase` | string | Yes | API passphrase. |
+
+Signature message:
+
+```text
+timestamp + method + path + body
+```
+
+Rules:
+
+| Rule | Description |
+| --- | --- |
+| `method` | Uppercase HTTP method, such as `GET`, `POST`, or `DELETE`. |
+| `path` | Full API path including `/api/v1`, excluding scheme, host, and query string. |
+| `body` | Exact JSON body string sent on the request, or an empty string for no body. |
+| timestamp window | Requests must be within 30 seconds of server time. |
+
+## WebSocket Auth Payload
+
+Authenticate the `/user` namespace by emitting `user-connect` after connecting.
+
+Payload type: `TradingApiKeyAuth`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `apiKey` | string | Yes | API key identifier. |
+| `signature` | string | Yes | HMAC-SHA256 signature. |
+| `timestamp` | string | Yes | Unix timestamp in milliseconds. |
+| `passphrase` | string | Yes | API passphrase. |
+
+Signature message:
+
+```text
+timestamp + WEBSOCKET + /user
+```
+
+Authentication result event: `user-authenticated`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `success` | boolean | Yes | Whether authentication succeeded. |
+| `error` | string | No | Failure reason. |

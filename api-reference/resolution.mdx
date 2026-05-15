@@ -1,0 +1,34 @@
+---
+title: Resolution
+description: Market resolution status endpoint reference
+---
+
+## Get Market Resolution Status
+
+```text
+GET /api/v1/resolution/market/{marketId}/status
+```
+
+**Authentication:** `Public`
+
+Rate limit: 30 requests per minute.
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+
+Response type: `MarketResolutionStatus`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `timestamp` | integer or string | Yes | Status timestamp. |
+| `status` | enum string | Yes | `pending`, `proposed`, `disputed`, `settled`, or `resolved`. |
+| `outcome` | enum string | Yes | `YES`, `NO`, `TIE`, or empty string. |
+| `displayOutcome` | string | Yes | Display label for the final outcome. |
+| `proposedOutcome` | enum string | Yes | `YES`, `NO`, `TIE`, or empty string. |
+| `proposedDisplayOutcome` | string | Yes | Display label for the proposed outcome. |
+| `reproposedOutcome` | enum string | Yes | `YES`, `NO`, `TIE`, or empty string. |
+| `reproposedDisplayOutcome` | string | Yes | Display label for the reproposed outcome. |
+| `secondDispute` | boolean | Yes | Whether a second dispute exists. |

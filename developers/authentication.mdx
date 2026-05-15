@@ -1,0 +1,249 @@
+---
+title: Authentication
+description: Sign Hit REST and WebSocket requests with trading API keys
+---
+
+Hit trading bots use API key authentication with HMAC-SHA256 signatures.
+
+Public market data endpoints do not require authentication. Private trading endpoints and the `/user` WebSocket namespace require a trading API key, secret, and passphrase.
+
+<Warning>
+  Keep the API secret and passphrase out of source control and browser code.
+  They are for server-side bots and services.
+</Warning>
+
+## Credentials
+
+Configure your bot with:
+
+```bash
+export HIT_API_KEY='API_KEY'
+export HIT_API_SECRET='API_SECRET'
+export HIT_API_PASSPHRASE='API_PASSPHRASE'
+```
+
+API key creation and key management are handled in the Hit app. These docs cover how to use an existing trading key from a programmatic client.
+
+## REST HMAC Headers
+
+Every authenticated REST request must include:
+
+| Header | Value |
+| --- | --- |
+| `hit-api-key` | API key identifier |
+| `hit-signature` | HMAC-SHA256 signature |
+| `hit-timestamp` | Unix timestamp in milliseconds |
+| `hit-passphrase` | API passphrase returned at key creation |
+
+The signature message is:
+
+```text
+timestamp + method + path + body
+```
+
+Rules:
+
+- `method` is uppercase, such as `GET`, `POST`, or `DELETE`.
+- `path` includes `/api/v1` and excludes the scheme, host, and query string.
+- `body` is the exact JSON string sent on the request, or an empty string for requests without a body.
+- Timestamps must be within 30 seconds of server time.
+
+## REST Signing Examples
+
+<Tabs sync={false}>
+<Tab title="TypeScript">
+
+```typescript
+import { createHmac } from "node:crypto";
+
+type JsonBody = Record<string, unknown>;
+
+function signRequest(
+  apiSecret: string,
+  timestamp: string,
+  method: string,
+  path: string,
+  body = "",
+) {
+  return createHmac("sha256", apiSecret)
+    .update(`${timestamp}${method.toUpperCase()}${path}${body}`)
+    .digest("hex");
+}
+
+async function hitRequest(method: string, path: string, body?: JsonBody) {
+  const apiHost = "https://hit.com";
+  const fullPath = `/api/v1${path}`;
+  const timestamp = Date.now().toString();
+  const bodyText = body ? JSON.stringify(body) : "";
+
+  const response = await fetch(`${apiHost}${fullPath}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "hit-api-key": process.env.HIT_API_KEY!,
+      "hit-signature": signRequest(
+        process.env.HIT_API_SECRET!,
+        timestamp,
+        method,
+        fullPath,
+        bodyText,
+      ),
+      "hit-timestamp": timestamp,
+      "hit-passphrase": process.env.HIT_API_PASSPHRASE!,
+    },
+    body: bodyText || undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${await response.text()}`);
+  }
+
+  return response.json() as Promise<unknown>;
+}
+
+const orders = await hitRequest("GET", "/orders");
+console.log(orders);
+```
+
+</Tab>
+
+<Tab title="Python">
+
+```python
+import hashlib
+import hmac
+import json
+import os
+import time
+
+import requests
+
+
+def sign_request(secret: str, timestamp: str, method: str, path: str, body: str = "") -> str:
+    message = f"{timestamp}{method.upper()}{path}{body}"
+    return hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+
+def hit_request(method: str, path: str, payload: dict | None = None):
+    api_host = "https://hit.com"
+    full_path = f"/api/v1{path}"
+    timestamp = str(int(time.time() * 1000))
+    body = json.dumps(payload, separators=(",", ":")) if payload else ""
+
+    response = requests.request(
+        method,
+        f"{api_host}{full_path}",
+        headers={
+            "Content-Type": "application/json",
+            "hit-api-key": os.environ["HIT_API_KEY"],
+            "hit-signature": sign_request(
+                os.environ["HIT_API_SECRET"],
+                timestamp,
+                method,
+                full_path,
+                body,
+            ),
+            "hit-timestamp": timestamp,
+            "hit-passphrase": os.environ["HIT_API_PASSPHRASE"],
+        },
+        data=body or None,
+        timeout=10,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+print(hit_request("GET", "/orders"))
+```
+
+</Tab>
+
+<Tab title="Rust">
+
+```rust
+use hmac::{Hmac, Mac};
+use reqwest::blocking::Client;
+use serde_json::Value;
+use sha2::Sha256;
+use std::env;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+type HmacSha256 = Hmac<Sha256>;
+
+fn timestamp_ms() -> String {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock before unix epoch")
+        .as_millis()
+        .to_string()
+}
+
+fn sign_request(secret: &str, timestamp: &str, method: &str, path: &str, body: &str) -> String {
+    let message = format!("{}{}{}{}", timestamp, method.to_uppercase(), path, body);
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("hmac accepts any key");
+    mac.update(message.as_bytes());
+    hex::encode(mac.finalize().into_bytes())
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new();
+    let full_path = "/api/v1/orders";
+    let timestamp = timestamp_ms();
+    let signature = sign_request(
+        &env::var("HIT_API_SECRET")?,
+        &timestamp,
+        "GET",
+        full_path,
+        "",
+    );
+
+    let response: Value = client
+        .get(format!("https://hit.com{}", full_path))
+        .header("Content-Type", "application/json")
+        .header("hit-api-key", env::var("HIT_API_KEY")?)
+        .header("hit-signature", signature)
+        .header("hit-timestamp", timestamp)
+        .header("hit-passphrase", env::var("HIT_API_PASSPHRASE")?)
+        .send()?
+        .error_for_status()?
+        .json()?;
+
+    println!("{response:#}");
+    Ok(())
+}
+```
+
+</Tab>
+</Tabs>
+
+## WebSocket Auth
+
+The `/user` Socket.IO namespace authenticates after connect with a `user-connect` message.
+
+The WebSocket signature message is different from REST:
+
+```text
+timestamp + WEBSOCKET + /user
+```
+
+Payload:
+
+```json
+{
+  "auth": {
+    "apiKey": "API_KEY",
+    "signature": "HMAC_SIGNATURE",
+    "timestamp": "1778748000000",
+    "passphrase": "API_PASSPHRASE"
+  }
+}
+```
+
+The server responds on `user-authenticated` with `{ "success": true }` or `{ "success": false, "error": "..." }`.
+
+## Security Notes
+
+- Keep API secrets out of source control and client-side browser code.
+- Use separate keys for separate bots or services.
+- Deactivate unused or compromised keys immediately.
+- Keep host clocks synchronized; requests outside the timestamp window are rejected.
