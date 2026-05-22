@@ -1,6 +1,6 @@
 ---
 title: Portfolio
-description: User position, portfolio value, and account activity endpoint reference
+description: User position, portfolio value and account activity endpoint reference
 ---
 
 ## Get User Positions
@@ -15,13 +15,13 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `status` | enum string | No | Market status: `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `status` | enum string | No | Market status: `DRAFT`, `ACTIVE` or `RESOLVED`. |
 | `id` | UUID string | No | Market UUID. |
 | `eventId` | UUID string | No | Event UUID. |
 | `title` | string | No | Case-insensitive title filter. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `10`. |
-| `sortBy` | enum string | No | `latest`, `current`, `initial`, or `return`. Default `latest`. |
+| `sortBy` | enum string | No | `latest`, `current`, `initial` or `return`. Default `latest`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
 
 Response type: `UserPositionsResponse`.
@@ -71,7 +71,7 @@ Query parameters:
 | `term` | string | No | Search term. Max 50 characters. |
 | `name` | string | No | Case-insensitive partial name filter. |
 | `market` | UUID string | No | Market UUID. |
-| `types` | enum string or enum string[] | No | `BUY`, `SELL`, `SPLIT`, `MERGE`, or `REDEEM`. |
+| `types` | enum string or enum string[] | No | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |
 | `fromTimestamp` | integer | No | Unix timestamp in seconds. |
 | `toTimestamp` | integer | No | Unix timestamp in seconds. |
 | `page` | integer | No | Page number. Default `1`. |
@@ -107,7 +107,7 @@ Response type: `number`.
 | `icon` | string | No | Market icon URL. |
 | `slug` | string | No | Event slug. |
 | `title` | string | No | Market title. |
-| `status` | enum string | No | `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `status` | enum string | No | `DRAFT`, `ACTIVE` or `RESOLVED`. |
 | `conditionId` | string | No | Conditional Tokens condition ID. |
 | `resolvedTo` | string or number | No | Resolution outcome. |
 | `outcome` | string | No | Outcome label. |
@@ -135,7 +135,7 @@ Response type: `number`.
 | `proxy_address` | address string | Yes | User proxy wallet address. |
 | `outcome1` | string | Yes | Outcome 1 label. |
 | `outcome2` | string | Yes | Outcome 2 label. |
-| `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE`, or `REDEEM`. |
+| `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |
 | `timestamp` | integer | Yes | Activity timestamp in seconds. |
 | `hash` | string | Yes | Transaction hash. |
 | `amount` | number | Yes | Activity amount. |

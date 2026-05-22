@@ -1,6 +1,6 @@
 ---
 title: WebSocket Reference
-description: Socket.IO namespace, client message, and server event reference
+description: Socket.IO namespace, client message and server event reference
 ---
 
 Base URL:
@@ -23,7 +23,7 @@ Public order book and event data.
 
 **Authentication:** `API key HMAC`
 
-User-specific balances, positions, orders, and trades.
+User-specific balances, positions, orders and trades.
 
 ## Public Client Messages
 
@@ -193,7 +193,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `eventId` | UUID string | Yes | Event UUID. |
 | `marketId` | UUID string | Yes | Market UUID. |
 | `ancillaryData` | string | Yes | UMA ancillary data. |
-| `status` | enum string | Yes | `initialized`, `registered`, `proposed`, `resolved`, `disputed`, `settled`, or `paused`. |
+| `status` | enum string | Yes | `initialized`, `registered`, `proposed`, `resolved`, `disputed`, `settled` or `paused`. |
 | `from` | boolean | Yes | Previous on-chain boolean state. |
 | `to` | boolean | Yes | New on-chain boolean state. |
 | `blockTimestamp` | integer | No | Block timestamp. |
@@ -329,8 +329,8 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `side` | enum string | Yes | `buy` or `sell`. |
 | `size_matched` | string | Yes | Matched size. |
 | `timestamp` | string | Yes | Order creation timestamp converted to Unix milliseconds string. |
-| `type` | enum string | Yes | `PLACEMENT`, `UPDATE`, `CANCELLATION`, or `REJECTION`. |
-| `rejection_reason` | string | No | Present when `type=REJECTION`. Known values include `no_fill_available`, `insufficient_balance`, `stale_nonce`, and `onchain_revert:{reason}`. |
+| `type` | enum string | Yes | `PLACEMENT`, `UPDATE`, `CANCELLATION` or `REJECTION`. |
+| `rejection_reason` | string | No | Present when `type=REJECTION`. Known values include `no_fill_available`, `insufficient_balance`, `stale_nonce` and `onchain_revert:{reason}`. |
 
 `TradeEvent`:
 
@@ -349,7 +349,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `side` | enum string | Yes | `buy` or `sell`. |
 | `trader_side` | enum string | Yes | `MAKER` or `TAKER`. |
 | `size` | string | Yes | Filled size. |
-| `status` | enum string | Yes | `MATCHED`, `MINED`, `CONFIRMED`, or `FAILED`. |
+| `status` | enum string | Yes | `MATCHED`, `MINED`, `CONFIRMED` or `FAILED`. |
 | `taker_order_id` | UUID string | Yes | Taker order UUID. |
 | `timestamp` | string | Yes | Emit timestamp converted to Unix milliseconds string. |
 | `trade_owner` | UUID string | Yes | Taker owner user ID. |
@@ -385,7 +385,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `claimableMicroUsdc` | string | No | Claimable amount in micro-USDC. |
 | `rowCount` | integer | No | Number of settlement rows included. |
 | `outcome` | enum string | No | `dispatched` or `error`. Missing values should be treated as `dispatched`. |
-| `reason` | string | No | Failure reason, such as `signer-missing`, `executor-failed`, or `task-error`. |
+| `reason` | string | No | Failure reason, such as `signer-missing`, `executor-failed` or `task-error`. |
 
 `TransactionUpdate`:
 
@@ -394,5 +394,5 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `event_type` | enum string | Yes | `transaction`. |
 | `txHash` | string | Yes | Transaction hash. |
 | `status` | enum string | Yes | `success` or `failed`. |
-| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position`, or `multisend`. |
+| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position` or `multisend`. |
 | `timestamp` | integer | Yes | Emit timestamp in milliseconds. |

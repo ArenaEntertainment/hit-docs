@@ -30,7 +30,6 @@
             "pages": [
               "markets/deposits",
               "markets/withdrawals",
-              "markets/moving-funds",
               "markets/portfolio"
             ]
           },
@@ -55,17 +54,11 @@
           },
           {
             "group": "Rewards",
-            "pages": ["markets/points", "markets/liquidity"]
+            "pages": ["markets/liquidity"]
           },
           {
             "group": "FAQs",
-            "pages": [
-              "markets/what-is-a-prediction-market",
-              "markets/can-i-cash-out-early",
-              "markets/trading-limits",
-              "markets/does-hit-have-a-token",
-              "markets/does-hit-have-an-api"
-            ]
+            "pages": ["markets/faq"]
           }
         ]
       },
@@ -114,17 +107,6 @@
             "group": "Realtime",
             "pages": [
               "api-reference/websockets"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Casino",
-        "groups": [
-          {
-            "group": "Casino",
-            "pages": [
-              "casino/getting-started"
             ]
           }
         ]

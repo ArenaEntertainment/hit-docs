@@ -1,6 +1,6 @@
 ---
 title: Markets
-description: Market lookup, volume, users, and activity endpoint reference
+description: Market lookup, volume, users and activity endpoint reference
 ---
 
 ## Get Markets by ID
@@ -123,7 +123,7 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `proxyAddress` | address string | No | Proxy wallet address filter. |
-| `type` | enum string | No | `SPLIT`, `MERGE`, or `REDEEM`. |
+| `type` | enum string | No | `SPLIT`, `MERGE` or `REDEEM`. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `10`. |
 | `total` | boolean | No | Include total count. Default `true`. |
@@ -141,7 +141,7 @@ Response type: `Pagination<Activity>`.
 | `createdAt` | string (date-time) | Yes | Creation timestamp. |
 | `updatedAt` | string (date-time) | Yes | Last update timestamp. |
 | `chance` | number | Yes | Current market chance. |
-| `status` | enum string | Yes | `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `status` | enum string | Yes | `DRAFT`, `ACTIVE` or `RESOLVED`. |
 | `icon` | string | Yes | Market icon URL. |
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |
@@ -194,7 +194,7 @@ Response type: `Pagination<Activity>`.
 | `proxy_address` | address string | Yes | User proxy wallet address. |
 | `outcome1` | string | Yes | Outcome 1 label. |
 | `outcome2` | string | Yes | Outcome 2 label. |
-| `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE`, or `REDEEM`. |
+| `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |
 | `timestamp` | integer | Yes | Activity timestamp in seconds. |
 | `hash` | string | Yes | Transaction hash. |
 | `amount` | number | Yes | Activity amount. |

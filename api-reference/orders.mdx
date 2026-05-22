@@ -1,6 +1,6 @@
 ---
 title: Orders
-description: Order listing, creation, and cancellation endpoint reference
+description: Order listing, creation and cancellation endpoint reference
 ---
 
 ## List Orders
@@ -16,10 +16,10 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
-| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED`. |
+| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
 | `maker` | address string | No | Maker address. |
 | `marketName` | string | No | Case-insensitive partial market name. |
-| `sortBy` | enum string | No | `created_at`, `total`, `amount`, or `filled`. Default `created_at`. |
+| `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
 
 Response type: `Order[]`.
@@ -37,12 +37,12 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
-| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED`. |
+| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
 | `maker` | address string | No | Maker address. |
 | `marketName` | string | No | Case-insensitive partial market name. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `30`. |
-| `sortBy` | enum string | No | `created_at`, `total`, `amount`, or `filled`. Default `created_at`. |
+| `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
 
 Response type: `Pagination<Order>`.
@@ -84,7 +84,7 @@ Request body type: `CreateOrder`.
 | `feeRateBps` | integer | No | Fee rate in basis points. Range `0` to `10000`. |
 | `side` | integer | Yes | `0` buy, `1` sell. |
 | `signature` | string | No | Client-side EIP-712 order signature. |
-| `orderType` | enum string | Yes | `GTC`, `FOK`, or `FAK`. |
+| `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
 | `priceUint` | string | No | Server-compatible price integer. |
 
 Response type: `Order`.
@@ -250,10 +250,10 @@ Response type: `Pagination<OrderbookEvent>`.
 | `signatureType` | integer | Yes | Signature type. |
 | `signature` | string | Yes | EIP-712 signature. |
 | `market` | UUID string | Yes | Market UUID. |
-| `orderType` | enum string | Yes | `GTC`, `FOK`, or `FAK`. |
+| `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
 | `owner` | UUID string | Yes | Hit user ID that owns the order. |
 | `outcome` | string | Yes | Outcome label. |
-| `status` | enum string | Yes | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED`. |
+| `status` | enum string | Yes | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
 | `createdAt` | string (date-time) | Yes | Creation timestamp. |
 | `amount` | number | Yes | Order size in display units. |
 | `price` | number | Yes | Limit price. |

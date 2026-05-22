@@ -3,29 +3,46 @@ title: Withdrawals
 description: Learn how to withdraw funds from your Hit account
 ---
 
-You can withdraw your funds from Hit at any time.
+You can withdraw your funds from Hit at any time. Before you start, make sure you have a withdrawable balance in your Hit account.
 
 ### Withdrawal Methods
 
-#### Crypto Wallet
+#### Web3 Wallet
 
-Withdraw to any wallet that has access to the Base network and can receive USDC.
+Withdraw to any self-custodial wallet. In the withdrawal flow you provide:
+
+- **Destination address** — the wallet you want to receive funds.
+- **Amount** — how much you want to withdraw.
+- **Chain** — the network to send on (many chains are supported and selectable in the flow).
+- **Token** — the asset to receive on that chain (for example, USDC on Base).
+
+Before you confirm, the app shows the amount you will receive along with a breakdown of network and processing fees.
 
 <Warning>
-  **Important:** - You must provide a wallet address that supports the Base
-  network and can receive USDC - Exercise caution when withdrawing directly to
-  exchange wallets.
+  **Important:** Double-check the destination address, chain, and token before confirming.
+  - Sending to the wrong chain or token can result in permanent loss of funds.
+  - Exercise caution when withdrawing directly to exchange wallets; not all exchanges credit deposits on every supported chain.
 </Warning>
 
-#### Coinbase Off-ramp
+#### Bank / Card
 
-Use Coinbase Off-ramp to withdraw funds directly to your Coinbase account or bank account.
+Selecting Bank / Card opens a separate page where you choose the currency you want to receive. The currently supported receive currencies are:
+
+- USD
+- EUR
+- GBP
+- CAD
+- AUD
+
+<Info>
+  Availability depends on your region and the eligibility checks of our third-party providers, and is shown in the app at the time of withdrawal. Hit does not control which methods are available in your region, and you are responsible for ensuring your use of these methods complies with local laws and regulations.
+</Info>
 
 ### How to Withdraw
 
 1. Click the **Withdraw** button on the portfolio page.
-2. Choose your preferred withdrawal method.
-3. Follow the on-screen instructions.
+2. Choose either **Web3 Wallet** or **Bank / Card**.
+3. Follow the on-screen instructions to complete your withdrawal.
 
 <Info>
   **Limit Orders:** If you have resting limit orders, withdrawing funds may
@@ -33,9 +50,9 @@ Use Coinbase Off-ramp to withdraw funds directly to your Coinbase account or ban
   available liquid balance.
 </Info>
 
-## Need Help?
+### Need Help?
 
 If you encounter any issues:
 
 - Check our [FAQ](/markets/faq).
-- Contact support.
+- Click the **Support** button in the left sidebar to open our dedicated Discord channel.

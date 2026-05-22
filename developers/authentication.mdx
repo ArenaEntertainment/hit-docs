@@ -5,7 +5,7 @@ description: Sign Hit REST and WebSocket requests with trading API keys
 
 Hit trading bots use API key authentication with HMAC-SHA256 signatures.
 
-Public market data endpoints do not require authentication. Private trading endpoints and the `/user` WebSocket namespace require a trading API key, secret, and passphrase.
+Public market data endpoints do not require authentication. Private trading endpoints and the `/user` WebSocket namespace require a trading API key, secret and passphrase.
 
 <Warning>
   Keep the API secret and passphrase out of source control and browser code.
@@ -43,8 +43,8 @@ timestamp + method + path + body
 
 Rules:
 
-- `method` is uppercase, such as `GET`, `POST`, or `DELETE`.
-- `path` includes `/api/v1` and excludes the scheme, host, and query string.
+- `method` is uppercase, such as `GET`, `POST` or `DELETE`.
+- `path` includes `/api/v1` and excludes the scheme, host and query string.
 - `body` is the exact JSON string sent on the request, or an empty string for requests without a body.
 - Timestamps must be within 30 seconds of server time.
 

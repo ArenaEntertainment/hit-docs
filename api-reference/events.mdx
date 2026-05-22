@@ -15,11 +15,11 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `eventStatus` | enum string | No | `DRAFT`, `ACTIVE`, `RESOLVED`, or `ENDED`. |
-| `term` | string | No | Search event names, slugs, and descriptions. |
+| `eventStatus` | enum string | No | `DRAFT`, `ACTIVE`, `RESOLVED` or `ENDED`. |
+| `term` | string | No | Search event names, slugs and descriptions. |
 | `category` | UUID string | No | Category ID. |
-| `ends` | enum string | No | `TODAY`, `THIS_WEEK`, or `THIS_MONTH`. |
-| `addedWithin` | enum string | No | `LAST_24H`, `LAST_7D`, or `LAST_30D`. |
+| `ends` | enum string | No | `TODAY`, `THIS_WEEK` or `THIS_MONTH`. |
+| `addedWithin` | enum string | No | `LAST_24H`, `LAST_7D` or `LAST_30D`. |
 | `minLiquidity` | number | No | Minimum USD liquidity. |
 | `maxLiquidity` | number | No | Maximum USD liquidity. |
 | `isSettled` | boolean | No | Filter by market settlement status. |
@@ -29,7 +29,7 @@ Query parameters:
 | `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
 | `protected` | boolean | No | Include protected events. |
 | `single` | boolean | No | `true` for single-market events, `false` for multi-market events. |
-| `sortBy` | enum string | No | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug`, or `liquidity`. |
+| `sortBy` | enum string | No | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug` or `liquidity`. |
 | `order` | enum string | No | `ASC` or `DESC`. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `10`. |
@@ -91,7 +91,7 @@ Response type: `number`.
 | `startDate` | string (date-time) | Yes | Event start timestamp. |
 | `endDate` | string (date-time) | Yes | Event end timestamp. |
 | `icon` | string | Yes | Event icon URL. |
-| `eventStatus` | enum string | Yes | `DRAFT`, `ACTIVE`, `RESOLVED`, or `ENDED`. |
+| `eventStatus` | enum string | Yes | `DRAFT`, `ACTIVE`, `RESOLVED` or `ENDED`. |
 | `protected` | boolean | Yes | Whether the event is protected. |
 | `single` | boolean | Yes | Whether the event has one market. |
 | `isDetermined` | boolean | Yes | Whether the event's winning market has been determined. |
@@ -122,7 +122,7 @@ Response type: `number`.
 | `createdAt` | string (date-time) | Yes | Creation timestamp. |
 | `updatedAt` | string (date-time) | Yes | Last update timestamp. |
 | `chance` | number | Yes | Current market chance. |
-| `status` | enum string | Yes | `DRAFT`, `ACTIVE`, or `RESOLVED`. |
+| `status` | enum string | Yes | `DRAFT`, `ACTIVE` or `RESOLVED`. |
 | `icon` | string | Yes | Market icon URL. |
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |

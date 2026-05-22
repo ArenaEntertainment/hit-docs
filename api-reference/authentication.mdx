@@ -5,7 +5,7 @@ description: API key headers for private trading endpoints and user WebSocket au
 
 Private trading endpoints use API key HMAC authentication. Public market data endpoints do not require credentials.
 
-For implementation examples in TypeScript, Python, and Rust, see [Developer Authentication](/developers/authentication).
+For implementation examples in TypeScript, Python and Rust, see [Developer Authentication](/developers/authentication).
 
 ## REST Headers
 
@@ -28,8 +28,8 @@ Rules:
 
 | Rule | Description |
 | --- | --- |
-| `method` | Uppercase HTTP method, such as `GET`, `POST`, or `DELETE`. |
-| `path` | Full API path including `/api/v1`, excluding scheme, host, and query string. |
+| `method` | Uppercase HTTP method, such as `GET`, `POST` or `DELETE`. |
+| `path` | Full API path including `/api/v1`, excluding scheme, host and query string. |
 | `body` | Exact JSON body string sent on the request, or an empty string for no body. |
 | timestamp window | Requests must be within 30 seconds of server time. |
 

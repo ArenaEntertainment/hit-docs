@@ -1,11 +1,11 @@
 ---
 title: Developer Quickstart
-description: Start building with Hit market data, trading endpoints, and WebSockets
+description: Start building with Hit market data, trading endpoints and WebSockets
 ---
 
-Hit exposes public market data endpoints, authenticated trading endpoints, and Socket.IO feeds for real-time updates.
+Hit exposes public market data endpoints, authenticated trading endpoints and Socket.IO feeds for real-time updates.
 
-Use the **Developers** section for task-based guides. Use the **API Reference** section for endpoint lists, request shapes, and event names.
+Use the **Developers** section for task-based guides. Use the **API Reference** section for endpoint lists, request shapes and event names.
 
 ## Base URLs
 
@@ -19,7 +19,7 @@ If you are integrating against staging or local services, keep the same paths an
 ## What You Need
 
 - A Hit account with a wallet and proxy wallet set up.
-- A trading API key, secret, and passphrase generated from your Hit account.
+- A trading API key, secret and passphrase generated from your Hit account.
 
 <Warning>
   API secrets and passphrases are only returned when a key is created. Store them
@@ -75,7 +75,7 @@ export HIT_API_SECRET='API_SECRET'
 export HIT_API_PASSPHRASE='API_PASSPHRASE'
 ```
 
-See [Authentication](/developers/authentication) for HMAC signing in TypeScript, Python, and Rust.
+See [Authentication](/developers/authentication) for HMAC signing in TypeScript, Python and Rust.
 
 ## 4. Place an Order
 
@@ -162,7 +162,7 @@ const order = await authedRequest("POST", "/orders", {
 console.log(order);
 ```
 
-See [Orders](/developers/orders) for order fields, batch orders, and cancellation examples.
+See [Orders](/developers/orders) for order fields, batch orders and cancellation examples.
 
 ## 5. Stream Updates
 

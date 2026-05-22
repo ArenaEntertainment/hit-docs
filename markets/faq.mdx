@@ -1,0 +1,206 @@
+---
+title: Frequently Asked Questions
+description: Everything you need to know about how Hit works.
+---
+
+## Getting Started
+
+<AccordionGroup>
+  <Accordion title="What is Hit?">
+    Hit is a peer-to-peer prediction market where you trade shares based on real-world outcomes. When you have insight into what's likely to happen, you can profit by taking positions on those outcomes. You trade directly with other users, not against a house.
+  </Accordion>
+
+  <Accordion title='What does "Hit" and "Miss" mean?'>
+    Every market has two outcomes:
+
+    - **Hit**: the event happens (equivalent to "Yes" on other prediction markets). Hit shares pay out $1.00 if the event occurs.
+    - **Miss**: the event does not happen (equivalent to "No"). Miss shares pay out $1.00 if the event does not occur.
+
+    Each pair of Hit and Miss shares is fully collateralised by $1.00 USDC.
+  </Accordion>
+
+  <Accordion title="How do I create an account?">
+    Click the **Login** button and choose your sign-up method:
+
+    - **Email**: create an account with your email address.
+    - **Google**: sign up instantly with your Google account.
+    - **Connect Wallet**: use an existing crypto wallet.
+
+    Once signed up, Hit automatically creates two wallets: a self-custodial Privy wallet (you can export the private key anytime from account settings) and a smart contract wallet that enables gasless, seamless trading. For the best mobile experience, sign up with email or Google rather than wallet connection.
+
+    See [Signing up](/markets/signing-up) for more detail.
+  </Accordion>
+
+  <Accordion title="What do share prices mean?">
+    Each share trades between $0.00 and $1.00. The price reflects the market's collective estimate of the probability that outcome will occur. For example, a Hit share priced at $0.40 implies the market believes there's a 40% chance the event happens. Prices update in real time as traders buy and sell.
+  </Accordion>
+
+  <Accordion title="How do I make a profit?">
+    - Buy **Hit** when you think an event is more likely than the current price suggests.
+    - Buy **Miss** when you think an event is less likely than the price indicates.
+    - Sell early to lock in profits or cut losses before the event concludes.
+
+    Your profit is determined by the spread between your entry and exit price, multiplied by your position size.
+
+    **Example:** you buy 100 Hit shares at $0.52 ($52 total). The price rises to $0.72 and you sell for $72, a $20 profit without waiting for the event to finish.
+  </Accordion>
+
+  <Accordion title="Why do I have two wallets after signing up?">
+    Hit automatically provisions two wallets in the background so you can trade without paying gas or approving every transaction:
+
+    - **Privy wallet**: an app-specific, fully self-custodial wallet. You can export the private key anytime from account settings.
+    - **Smart contract wallet**: a smart contract wallet owned by your Privy wallet. It enables gasless transactions and a seamless trading experience.
+
+    You're ready to trade once both wallets appear on your profile page. See [Signing up](/markets/signing-up) for the full walkthrough.
+  </Accordion>
+</AccordionGroup>
+
+## Markets & Trading
+
+<AccordionGroup>
+  <Accordion title="What types of markets are available?">
+    Hit covers a wide range of categories including crypto, politics, sport, finance, science, culture, tech, weather and more. Markets range from short-term daily events (e.g. "Bitcoin higher on May 22?") to longer-term predictions (e.g. "Will Bitcoin hit $150K in 2026?") with end dates up to years away.
+  </Accordion>
+
+  <Accordion title="What is the order book?">
+    The [order book](/markets/order-book) shows all outstanding limit orders from other traders: the price they're willing to pay and the number of shares available. You can use it to see current liquidity and find the best available price before placing your trade. Always check the order book before placing large trades.
+  </Accordion>
+
+  <Accordion title="What is the difference between a market order and a limit order?">
+    - **[Market order](/markets/market-orders)**: executes immediately at the best available price in the order book. Good for speed, but you may experience slippage on large orders.
+    - **[Limit order](/markets/limit-orders)**: lets you set the exact price you want. Your order sits in the order book until another trader matches it. Limit orders that don't immediately match typically pay 0% maker fees.
+
+    Limit orders are not guaranteed to fill; they only execute when the market reaches your price. You can cancel any unfilled order at no cost, and partial fills are normal.
+  </Accordion>
+
+  <Accordion title="What's the difference between Simple and Linked markets?">
+    - **Simple markets** are binary Hit/Miss markets with two outcomes (e.g. "Will Bitcoin reach $150,000 by December 31, 2025?"). Hit price + Miss price always equals $1.00.
+    - **Linked markets** group multiple mutually exclusive binary markets where only one outcome can be true (e.g. an election with candidates A, B and C). They include an explicit **"Other"** outcome to cover any result not listed, and may include **placeholder** outcomes that get named later.
+
+    In linked markets, holding Miss positions across multiple outcomes can be converted to Hit positions plus USDC because the two are mathematically equivalent. See [Market types](/markets/market-types) for full detail.
+  </Accordion>
+
+  <Accordion title="Can I create my own market?">
+    Not currently. Markets on Hit are created by the Hit team, and there are no immediate plans to enable user-created markets.
+
+    You can suggest a market by tagging [@Hit](https://x.com/Hit) on X with the question, a clear resolution source and why you think there's demand. See [Market creation](/markets/market-creation).
+  </Accordion>
+
+  <Accordion title="Can I cash out before a market settles?">
+    Yes, you can sell your shares at any time before the market resolves. You can do this from the market detail page (click **Sell** in the positions section) or from your [portfolio page](/markets/portfolio). You don't have to wait for the event to conclude.
+  </Accordion>
+
+  <Accordion title="Are there any trading limits?">
+    Hit does not impose fixed trading limits. The practical constraint is the available liquidity in each market's order book: deep markets can absorb larger trades, while shallow markets may move significantly on smaller trades. For large orders, consider using limit orders, splitting your trade over time and checking the order book first.
+  </Accordion>
+
+  <Accordion title="How are markets resolved?">
+    Market resolution is powered by the [UMA Optimistic Oracle](https://oracle.uma.xyz/), a decentralised smart-contract protocol. Once the real-world event concludes:
+
+    1. An outcome is proposed on UMA along with a bond.
+    2. A challenge window opens on UMA during which anyone can dispute the proposal. The window length is set by UMA and varies by market.
+    3. If no dispute is raised, the market is finalised to the proposed outcome and winning shares become redeemable for $1.00 each.
+
+    Most markets resolve within 24 hours of the event concluding. Resolution sources are pre-defined per market and include official data providers, major news outlets, sports statistics sites and blockchain/financial data. See [Market resolution](/markets/market-resolution).
+  </Accordion>
+
+  <Accordion title="Can a market resolve as invalid (N/A)?">
+    Rarely, yes. A market can resolve as invalid if the event is cancelled with no alternative specified, the resolution source is permanently unavailable or the outcome is genuinely indeterminate under the market's rules. This is uncommon because markets are designed with clear, objective criteria. See [Market resolution](/markets/market-resolution).
+  </Accordion>
+
+  <Accordion title="Can I dispute a market resolution?">
+    Yes. Once an outcome is proposed, anyone can dispute it on the [UMA Oracle platform](https://oracle.uma.xyz/) by posting a dispute bond equal to the proposer's bond. UMA token holders ultimately decide the outcome through their voting process.
+
+    <Warning>
+      **Bonds are at risk:** If your dispute is unsuccessful, you forfeit your entire bond. Only dispute if you are confident the proposed outcome is incorrect according to the market's resolution criteria.
+    </Warning>
+
+    See [Market dispute](/markets/market-dispute) for the full process and what each outcome means for your bond.
+  </Accordion>
+</AccordionGroup>
+
+## Fees
+
+<AccordionGroup>
+  <Accordion title="What are the trading fees?">
+    Hit uses a maker-taker fee model:
+
+    - **Makers** (limit orders that add liquidity) typically pay 0% fees.
+    - **Takers** (orders that immediately match) may incur fees that scale with the market price: fees are highest near 50¢ (maximum uncertainty) and decrease toward the extremes (0¢ and 100¢).
+
+    Many markets on Hit have 0% fees for both makers and takers. When fees do apply, they are shown upfront on the trading ticket before you confirm, and orders that don't execute incur no fees.
+ To minimise fees, use limit orders and avoid trading near 50¢.
+
+    See [Trading fees](/markets/trading-fees) for the full breakdown and worked examples.
+  </Accordion>
+</AccordionGroup>
+
+## Wallet & Funds
+
+<AccordionGroup>
+  <Accordion title="How do I deposit funds?">
+    Click your wallet balance at the top of the page, select **Manage Funds**, then **Deposit**. Available methods include QR code / wallet address, connected wallet, direct transfer of Base USDC, and (depending on your region) Coinbase Onramp or Moonpay.
+
+    <Warning>
+      **Important:** You must send USDC on the Base network only to your primary Hit wallet. Any other token, network, or wallet address will result in permanent loss of funds.
+    </Warning>
+
+    See [Deposits](/markets/deposits) for full instructions.
+  </Accordion>
+
+  <Accordion title="How do I withdraw funds?">
+    Click **Withdraw** on the portfolio page and choose your method. You can always withdraw to a crypto wallet that supports USDC on the Base network. Depending on your region, additional fiat options such as withdrawing to a linked Coinbase account or bank may be offered.
+
+    <Warning>
+      **Important:** You must provide a wallet address that supports USDC on the Base network. Exercise caution when withdrawing directly to exchange wallets. If you have resting limit orders, withdrawing may cause some to be cancelled.
+    </Warning>
+
+    See [Withdrawals](/markets/withdrawals) for full instructions.
+  </Accordion>
+
+  <Accordion title="What currency does Hit use?">
+    Hit uses USDC (USD Coin) on the Base network as its underlying currency. Your balance is displayed in dollars and cents throughout the platform. All payouts and settlements are in USDC.
+  </Accordion>
+</AccordionGroup>
+
+## Rewards
+
+<AccordionGroup>
+  <Accordion title="What are liquidity rewards?">
+    On selected markets with liquidity rewards enabled, users who provide two-way liquidity within a qualifying spread earn a share of a daily USDC rewards pool. Rewards accrue minute by minute while your qualifying liquidity is live. Daily rewards settle at 00:10 UTC. See [Liquidity rewards](/markets/liquidity) for more.
+  </Accordion>
+
+  <Accordion title="How do I qualify for liquidity rewards?">
+    To be eligible:
+
+    - The market must have liquidity rewards turned on.
+    - You must provide liquidity on both sides of the market (both Hit and Miss).
+    - Your orders must stay within the qualifying spread.
+
+    The exact scoring metrics are not published. Users who consistently provide useful two-way liquidity should see rewards accrue over time. Place a resting limit order on any qualifying market to start earning.
+  </Accordion>
+</AccordionGroup>
+
+## Other Questions
+
+<AccordionGroup>
+  <Accordion title="Does Hit have a token?">
+    No. Hit does not currently have a token and has not announced plans for any token generation event. Stay tuned for future announcements from official channels.
+
+    <Warning>
+      **Be wary of scams:** Any claims about a Hit token are likely fraudulent. Only trust official announcements from [@Hit on X](https://x.com/Hit) or from hit.com.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="How do I get support?">
+    Click the **Support** button in the left sidebar. You'll be redirected to our dedicated Discord channel.
+  </Accordion>
+</AccordionGroup>
+
+## Developers
+
+<AccordionGroup>
+  <Accordion title="Does Hit have an API?">
+    Yes. Hit provides API access for developers who want to build integrations or trade programmatically. See the [Developers](/developers/quickstart) section for the quickstart, authentication, market data, orders and websockets.
+  </Accordion>
+</AccordionGroup>
