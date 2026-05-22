@@ -8,7 +8,7 @@ Official documentation for [Hit](https://hit.com), a peer-to-peer prediction mar
 
 This repository contains the complete documentation for Hit, covering:
 
-- **Users Guide**: Trading, deposits, withdrawals, market types, and more
+- **Users Guide**: Trading, deposits, withdrawals, market types and more
 - **Developer Guide**: API reference and integration guides
 - **FAQ**: Common questions about the platform
 

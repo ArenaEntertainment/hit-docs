@@ -24,11 +24,11 @@ Response type: `MarketResolutionStatus`.
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `timestamp` | integer or string | Yes | Status timestamp. |
-| `status` | enum string | Yes | `pending`, `proposed`, `disputed`, `settled`, or `resolved`. |
-| `outcome` | enum string | Yes | `YES`, `NO`, `TIE`, or empty string. |
+| `status` | enum string | Yes | `pending`, `proposed`, `disputed`, `settled` or `resolved`. |
+| `outcome` | enum string | Yes | `YES`, `NO`, `TIE` or empty string. |
 | `displayOutcome` | string | Yes | Display label for the final outcome. |
-| `proposedOutcome` | enum string | Yes | `YES`, `NO`, `TIE`, or empty string. |
+| `proposedOutcome` | enum string | Yes | `YES`, `NO`, `TIE` or empty string. |
 | `proposedDisplayOutcome` | string | Yes | Display label for the proposed outcome. |
-| `reproposedOutcome` | enum string | Yes | `YES`, `NO`, `TIE`, or empty string. |
+| `reproposedOutcome` | enum string | Yes | `YES`, `NO`, `TIE` or empty string. |
 | `reproposedDisplayOutcome` | string | Yes | Display label for the reproposed outcome. |
 | `secondDispute` | boolean | Yes | Whether a second dispute exists. |

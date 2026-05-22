@@ -1,6 +1,6 @@
 ---
 title: Prices
-description: Order book, last trade, price history, and spread endpoint reference
+description: Order book, last trade, price history and spread endpoint reference
 ---
 
 ## Get Order Book
@@ -70,7 +70,7 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `token` | string | Yes | Outcome token ID. |
-| `interval` | enum string | Yes | `1H`, `6H`, `1D`, `1W`, `1M`, or `ALL`. |
+| `interval` | enum string | Yes | `1H`, `6H`, `1D`, `1W`, `1M` or `ALL`. |
 | `fidelity` | integer | Yes | Minutes between points. Valid range: `1` to `1440`; max also depends on interval. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `10`, max `1440`. |
@@ -114,7 +114,7 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `range` | enum string | No | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL`, or `LATEST`. Default `1H`. |
+| `range` | enum string | No | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL` or `LATEST`. Default `1H`. |
 | `token` | integer | No | `0` for both outcomes, `1` for outcome 1, `2` for outcome 2. Default `0`. |
 
 Response type: `HistoricalSpread[]`.

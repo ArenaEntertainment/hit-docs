@@ -1,6 +1,6 @@
 ---
 title: Orders
-description: Place, list, cancel, and batch manage orders with the Hit trading API
+description: Place, list, cancel and batch manage orders with the Hit trading API
 ---
 
 Order endpoints require API key authentication. See [Authentication](/developers/authentication) for HMAC signing.
@@ -18,7 +18,7 @@ Hit accepts low-level order payloads built from outcome token amounts.
 | `takerAmount` | Yes | Amount requested from the taker, in 6-decimal base units |
 | `expiration` | Yes | Unix timestamp seconds, or `0` |
 | `side` | Yes | `0` for buy, `1` for sell |
-| `orderType` | Yes | `GTC`, `FOK`, or `FAK` |
+| `orderType` | Yes | `GTC`, `FOK` or `FAK` |
 | `feeRateBps` | Client-signed only | Must match the market `orderFeeRateBps` |
 | `signature` | Optional | Include for client-signed orders; omit when using server-side session signer |
 | `priceUint` | Optional | Server-compatible price integer when your client already computes it |
@@ -248,7 +248,7 @@ Filters:
 | Query | Description |
 | --- | --- |
 | `market` | Market UUID |
-| `status` | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED`, or `REJECTED` |
+| `status` | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED` |
 | `maker` | Maker wallet address |
 | `marketName` | Case-insensitive partial market name |
 | `sortBy` | Order sort field, default `created_at` |

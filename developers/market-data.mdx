@@ -1,6 +1,6 @@
 ---
 title: Market Data
-description: Discover markets and read prices, order books, history, and resolution status
+description: Discover markets and read prices, order books, history and resolution status
 ---
 
 Most market data is public and can be read without authentication.
@@ -17,14 +17,14 @@ Common filters:
 
 | Query | Description |
 | --- | --- |
-| `eventStatus` | `DRAFT`, `ACTIVE`, `RESOLVED`, or `ENDED` |
-| `term` | Search event names, slugs, and descriptions |
+| `eventStatus` | `DRAFT`, `ACTIVE`, `RESOLVED` or `ENDED` |
+| `term` | Search event names, slugs and descriptions |
 | `category` | Category UUID |
-| `ends` | `TODAY`, `THIS_WEEK`, or `THIS_MONTH` |
-| `addedWithin` | `LAST_24H`, `LAST_7D`, or `LAST_30D` |
+| `ends` | `TODAY`, `THIS_WEEK` or `THIS_MONTH` |
+| `addedWithin` | `LAST_24H`, `LAST_7D` or `LAST_30D` |
 | `minLiquidity`, `maxLiquidity` | Filter by USD liquidity |
 | `includeVolume` | Include `tradeVolumeUsd` and `tradeVolumeUsd24h` |
-| `sortBy` | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug`, or `liquidity` |
+| `sortBy` | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug` or `liquidity` |
 | `order` | `ASC` or `DESC` |
 | `page`, `limit`, `total` | Pagination controls |
 
@@ -181,7 +181,7 @@ curl 'https://hit.com/api/v1/price-history?token=TOKEN_ID&interval=1D&fidelity=5
 | Query | Description |
 | --- | --- |
 | `token` | Outcome token ID |
-| `interval` | `1H`, `6H`, `1D`, `1W`, `1M`, or `ALL` |
+| `interval` | `1H`, `6H`, `1D`, `1W`, `1M` or `ALL` |
 | `fidelity` | Minutes between points, from `1` to `1440` |
 | `page`, `limit`, `total` | Pagination controls |
 | `sortBy` | `timestamp` or `price` |
@@ -195,7 +195,7 @@ curl 'https://hit.com/api/v1/historical-data/spreads/MARKET_ID?range=1D&token=1'
 
 | Query | Description |
 | --- | --- |
-| `range` | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL`, or `LATEST` |
+| `range` | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL` or `LATEST` |
 | `token` | `0` for both outcomes, `1` for outcome 1, `2` for outcome 2 |
 
 ## Resolution Status
