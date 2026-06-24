@@ -298,4 +298,8 @@ These endpoints also accept API key authentication:
 | `GET /markets/value` | Position value for the current user or a supplied proxy wallet |
 | `GET /markets/user-activity` | User activity feed |
 | `GET /markets/traded-count` | Number of markets traded |
+| `GET /markets/redeemable-positions` | Resolved markets with positions you can redeem |
+| `POST /markets/redeem-positions/batch` | Redeem one or more resolved market positions |
+| `GET /markets/mergeable-positions` | Active markets where you hold both outcome legs |
+| `POST /markets/merge-positions/batch` | Merge one or more complete Yes/No sets back into collateral |
 | `GET /orders/events` | Active order book events |

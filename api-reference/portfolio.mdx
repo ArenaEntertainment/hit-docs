@@ -92,6 +92,112 @@ GET /api/v1/markets/traded-count
 
 Response type: `number`.
 
+## Get Redeemable Positions
+
+```text
+GET /api/v1/markets/redeemable-positions
+```
+
+**Authentication:** `API key HMAC`
+
+Returns resolved markets where you currently have a redeemable indexed position.
+
+Response type: `RedeemablePosition[]`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID to pass to `POST /markets/redeem-positions/batch`. |
+| `onchainMarketId` | string | Yes | On-chain market ID. |
+| `conditionId` | string | Yes | Conditional Tokens condition ID used for redemption. |
+| `tokenId1` | string | Yes | Outcome 1 token ID. |
+| `tokenId2` | string | Yes | Outcome 2 token ID. |
+| `slug` | string | Yes | Event slug. |
+| `name` | string | Yes | Market name. |
+
+## Redeem Positions
+
+```text
+POST /api/v1/markets/redeem-positions/batch
+```
+
+**Authentication:** `API key HMAC`
+
+Redeems one or more resolved market positions in a single transaction. For a one-market redeem, send one market ID in `marketIds`.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketIds` | UUID string[] | Yes | Unique market UUIDs to redeem. Minimum `1`. Default maximum `50`; hard maximum `200`. |
+
+Response type: `BatchRedeemResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `txHash` | string | Yes | Transaction hash for the redeem transaction. |
+| `included` | UUID string[] | Yes | Market UUIDs included in the transaction. |
+| `excluded` | `ExcludedRedeemMarket[]` | Yes | Requested markets that were not redeemed. |
+
+`ExcludedRedeemMarket`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Excluded market UUID. |
+| `reason` | enum string | Yes | `not-redeemable`, `zero-onchain-balance` or `not-binary`. |
+
+## Get Mergeable Positions
+
+```text
+GET /api/v1/markets/mergeable-positions
+```
+
+**Authentication:** `API key HMAC`
+
+Returns active markets where you currently hold both outcome legs and can merge complete sets back into collateral.
+
+Response type: `MergeablePosition[]`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID to pass to `POST /markets/merge-positions/batch`. |
+| `onchainMarketId` | string | Yes | On-chain market ID. |
+| `conditionId` | string | Yes | Conditional Tokens condition ID used for merging. |
+| `tokenId1` | string | Yes | Outcome 1 token ID. |
+| `tokenId2` | string | Yes | Outcome 2 token ID. |
+| `slug` | string | Yes | Event slug. |
+| `name` | string | Yes | Market name. |
+
+## Merge Positions
+
+```text
+POST /api/v1/markets/merge-positions/batch
+```
+
+**Authentication:** `API key HMAC`
+
+Merges complete Yes/No sets for one or more active markets in a single transaction. For a one-market merge, send one market ID in `marketIds`. You do not provide an amount; Hit computes the merge amount from your live on-chain balances.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketIds` | UUID string[] | Yes | Unique market UUIDs to merge. Minimum `1`. Default maximum `50`; hard maximum `200`. |
+
+Response type: `BatchMergeResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `txHash` | string | Yes | Transaction hash for the merge transaction. |
+| `included` | UUID string[] | Yes | Market UUIDs included in the transaction. |
+| `excluded` | `ExcludedMergeMarket[]` | Yes | Requested markets that were not merged. |
+
+`ExcludedMergeMarket`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Excluded market UUID. |
+| `reason` | enum string | Yes | `not-mergeable`, `only-one-side` or `not-binary`. |
+
 ## UserPosition
 
 | Field | Type | Required | Description |
