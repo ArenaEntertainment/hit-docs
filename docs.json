@@ -30,7 +30,8 @@
             "pages": [
               "markets/deposits",
               "markets/withdrawals",
-              "markets/portfolio"
+              "markets/portfolio",
+              "markets/moving-funds"
             ]
           },
           {
@@ -59,6 +60,18 @@
           {
             "group": "FAQs",
             "pages": ["markets/faq"]
+          }
+        ]
+      },
+      {
+        "tab": "Casino",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "casino/index",
+              "casino/getting-started"
+            ]
           }
         ]
       },
