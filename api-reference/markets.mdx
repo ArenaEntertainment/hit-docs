@@ -1,6 +1,6 @@
 ---
 title: Markets
-description: Market lookup, volume, users and activity endpoint reference
+description: Market lookup, volume and activity endpoint reference
 ---
 
 ## Get Markets by ID
@@ -57,30 +57,6 @@ Response type: `MarketVolume`.
 | `eventId` | UUID string | Yes | Parent event UUID. |
 | `tradeVolumeUsd` | string | Yes | All-time trade volume in USD. |
 | `tradeVolumeUsd24h` | string | No | 24-hour trade volume in USD. |
-
-## Get Market Users
-
-```text
-GET /api/v1/markets/{id_or_slug}/users
-```
-
-**Authentication:** `Public`
-
-Path parameters:
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id_or_slug` | UUID string or string | Yes | Market UUID or slug. |
-
-Response type: `MarketUser[]`.
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `proxy_address` | address string | Yes | User proxy wallet address. |
-| `token_id_1` | string or null | No | First held token ID. |
-| `amount_1` | string or number or null | No | Balance for `token_id_1`. |
-| `token_id_2` | string or null | No | Second held token ID. |
-| `amount_2` | string or number or null | No | Balance for `token_id_2`. |
 
 ## Get Public Market Activity
 
