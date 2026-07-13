@@ -16,13 +16,15 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
-| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
+| `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED` or `REJECTED`. `CANCELLED` is rejected; use `/orders/paginated`. |
 | `maker` | address string | No | Maker address. |
 | `marketName` | string | No | Case-insensitive partial market name. |
 | `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
 
 Response type: `Order[]`.
+
+When `status` is omitted, the endpoint returns all non-cancelled statuses. Passing `status=CANCELLED` returns `400`.
 
 ## List Orders Paginated
 
@@ -44,8 +46,23 @@ Query parameters:
 | `limit` | integer | No | Results per page. Default `30`. |
 | `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
+| `total` | boolean | No | Include a bounded total count. Default `false`. |
+| `cursor` | string | No | Opaque cursor from the previous response. Valid only with the default `created_at` sort. |
 
-Response type: `Pagination<Order>`.
+When `status` is omitted, this endpoint returns active orders only: `PENDING` and `EXECUTING`.
+
+Response type: `OrderPagination`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `first` | integer | Yes | One-based index of the first row. |
+| `last` | integer | Yes | One-based index of the last row. |
+| `limit` | integer | Yes | Results per page. |
+| `total` | integer or null | Yes | Bounded total when `total=true`; otherwise `null`. |
+| `totalCapped` | boolean | No | Whether `total` reached the server-side cap. |
+| `data` | `Order[]` | Yes | Orders on this page. |
+| `hasMore` | boolean | Yes | Whether another cursor page exists. |
+| `nextCursor` | string or null | Yes | Opaque cursor for the next page. |
 
 ## Get Order
 
@@ -85,7 +102,9 @@ Request body type: `CreateOrder`.
 | `side` | integer | Yes | `0` buy, `1` sell. |
 | `signature` | string | No | Client-side EIP-712 order signature. |
 | `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
+| `postOnly` | boolean | No | Maker-only flag. Valid for GTC only; a crossing post-only order is rejected. Default `false`. |
 | `priceUint` | string | No | Server-compatible price integer. |
+| `idempotencyKey` | UUID v4 string | No | Client key for deduplicating repeated submission of the same logical order. |
 
 Response type: `Order`.
 
@@ -133,26 +152,6 @@ Path parameters:
 | `id` | UUID string | Yes | Order UUID. |
 
 Response type: `Order`.
-
-## Delete Order
-
-```text
-DELETE /api/v1/orders/{id}
-```
-
-**Authentication:** `API key HMAC`
-
-Path parameters:
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | UUID string | Yes | Order UUID. |
-
-Response type: `DeleteOrderResponse`.
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `success` | boolean | Yes | Whether the order was deleted. |
 
 ## Cancel Batch Orders
 
@@ -231,6 +230,8 @@ Query parameters:
 
 Response type: `Pagination<OrderbookEvent>`.
 
+When `total=true`, the count is bounded and the response can include `totalCapped`.
+
 ## Order
 
 | Field | Type | Required | Description |
@@ -251,6 +252,7 @@ Response type: `Pagination<OrderbookEvent>`.
 | `signature` | string | Yes | EIP-712 signature. |
 | `market` | UUID string | Yes | Market UUID. |
 | `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
+| `postOnly` | boolean | No | Whether the order was submitted as maker-only. |
 | `owner` | UUID string | Yes | Hit user ID that owns the order. |
 | `outcome` | string | Yes | Outcome label. |
 | `status` | enum string | Yes | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |

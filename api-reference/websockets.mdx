@@ -34,6 +34,8 @@ User-specific balances, positions, orders and trades.
 | `orderbook-market-disconnect` | `OrderbookTokenIds` | Unsubscribe from outcome token IDs. |
 | `event-connect` | UUID string or omitted | Subscribe to an event UUID, or all event updates when omitted. |
 | `event-disconnect` | UUID string or omitted | Unsubscribe from an event UUID, or the all-events subscription when omitted. |
+| `crypto-price-connect` | string[] | Subscribe to allowlisted lowercase crypto symbols, such as `btcusdt`. |
+| `crypto-price-disconnect` | string[] | Unsubscribe from crypto symbols. |
 
 `PingPayload`:
 
@@ -117,6 +119,11 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `event-onchain-update` | `EventOnchainUpdatePublic` or `EventOnchainUpdateRaw` | On-chain event or market update. |
 | `tick-size-change` | `TickSizeChange` | Market tick size update. |
 | `order-speed-bump-pending` | `OrderSpeedBumpPending` | Order delayed before matching. |
+| `crypto-price` | `CryptoPrice` | Live crypto price tick. |
+| `crypto-price-history` | `CryptoPriceHistory` | Initial crypto price history after subscribing. |
+| `crypto-price-error` | `CryptoPriceError` | Per-symbol subscription failure. |
+| `global-trade` | `GlobalTrade` | Site-wide confirmed trade feed. Broadcast automatically. |
+| `live-volume` | `LiveVolume` | Coalesced absolute market and event volume updates. Broadcast automatically. |
 
 `PongPayload`:
 
@@ -216,6 +223,35 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `orderId` | UUID string | No | Delayed order UUID when supplied by the producer. |
 | additional fields | object | No | The backend forwards any additional producer fields unchanged. |
 
+`CryptoPrice`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `symbol` | string | Yes | Lowercase market symbol. |
+| `price` | string | Yes | Latest price. |
+| `timestamp` | integer | Yes | Source timestamp in milliseconds. |
+| `source` | enum string | No | `BINANCE` or `PYTH`. |
+
+`CryptoPriceHistory`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `symbol` | string | Yes | Lowercase market symbol. |
+| `points` | `{ price: string, timestamp: integer }[]` | Yes | Oldest-first price history. |
+| `stale` | boolean | Yes | Whether the source history may no longer be live. |
+| `source` | enum string | No | `BINANCE` or `PYTH`. |
+
+`CryptoPriceError` contains the affected `symbol` and `reason: "subscribe_failed"`.
+
+`GlobalTrade` contains `id`, microsecond `matchedAt` and nullable `confirmedAt`, trader display fields, `side`, `sideRaw`, nullable `outcome`, `notionalUsd`, `price`, `size`, `tokenId`, market fields, event fields, and `isMultiMarket`.
+
+`LiveVolume`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `markets` | `{ id: UUID string, v: string }[]` | Yes | Absolute all-time USDC volume for changed markets. |
+| `events` | `{ id: UUID string, v: string }[]` | Yes | Absolute all-time USDC volume for changed events. |
+
 ## User Client Messages
 
 | Event | Payload type | Description |
@@ -253,8 +289,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `user-positions-update` | `UserPositionUpdate` | Position update. |
 | `user-order` | `UserOrderEvent[]` | Order update. |
 | `user-trade` | `TradeEvent[]` | Trade update. |
-| `user-mp-update` | `UserMpUpdate` | Rewards accrual update. |
-| `user-mp-claim-update` | `UserMpClaimUpdate` | Rewards claim dispatch update. |
+| `user-mp-claim-update` | `RewardClaimUpdate` | Rewards claim dispatch notification. The legacy event name remains live; raw rewards accrual updates are no longer exposed. |
 | `transaction` | `TransactionUpdate` | Transaction status update. |
 
 `UserAuthenticated`:
@@ -366,17 +401,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `owner` | UUID string | Yes | Maker owner user ID. |
 | `price` | string | Yes | Maker fill price. |
 
-`UserMpUpdate`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `userId` | UUID string | Yes | Hit user ID. |
-| `marketId` | UUID string | Yes | Market UUID. |
-| `mpDelta` | string | Yes | MP accrued in the epoch. |
-| `epochDate` | string | Yes | Reward epoch date. |
-| `projectedDailyUsdc` | string | No | Projected daily USDC value. |
-
-`UserMpClaimUpdate`:
+`RewardClaimUpdate`:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |

@@ -28,7 +28,7 @@ If you are integrating against staging or local services, keep the same paths an
 
 ## 1. Fetch Markets
 
-Market discovery is public. Start with active events, then pick a market token ID from the returned `marketsView` array.
+Market discovery is public. Start with active events, then pick a market token ID from the returned `markets` array.
 
 ```bash
 curl 'https://hit.com/api/v1/events?eventStatus=ACTIVE&includeVolume=true&limit=5'
@@ -59,8 +59,8 @@ The response contains price levels for the selected token:
   "market": "market-uuid",
   "asset_id": "TOKEN_ID",
   "timestamp": 1778748000000,
-  "bids": [{ "price": "0.62", "size": "25" }],
-  "asks": [{ "price": "0.64", "size": "10" }],
+  "bids": [{ "price": "0.62", "size": "25", "numOrders": 2 }],
+  "asks": [{ "price": "0.64", "size": "10", "numOrders": 1 }],
   "tick_size": "0.01"
 }
 ```

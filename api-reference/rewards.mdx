@@ -1,0 +1,175 @@
+---
+title: Rewards
+description: Dollar-denominated maker reward, history and claim endpoint reference
+---
+
+The user-facing Rewards API is denominated in USDC. It does not expose internal scoring units, reward shares or projected-share values.
+
+## Get My Rewards Summary
+
+```text
+GET /api/v1/rewards/me/summary
+```
+
+**Authentication:** `API key HMAC`
+
+Returns today's per-market rewards, yesterday's settled payouts and the current claimable balance.
+
+Response type: `UserRewardsSummary`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `todayByMarket` | `UserRewardsMarketBreakdown[]` | Yes | Today's per-market rewards. |
+| `earnedSoFarUsdc` | string | Yes | USDC payable if active markets settled now, formatted to 6 decimal places. |
+| `pendingSettlementTotalUsdc` | string | Yes | Estimated USDC from markets awaiting settlement, formatted to 6 decimal places. |
+| `yesterdaySettled` | `YesterdaySettledRewards` | Yes | Yesterday's settled total and per-market rows. |
+| `claimableUsdc` | string | Yes | USDC currently available to claim. |
+| `claimInFlight` | boolean | Yes | Whether a claim dispatch is currently in progress. |
+| `minPayoutUsdc` | string | Yes | Minimum claimable balance required to claim. |
+| `canClaim` | boolean | Yes | Whether the current balance can be claimed now. |
+
+`UserRewardsMarketBreakdown`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `marketSlug` | string or null | Yes | Market slug when available. |
+| `marketName` | string or null | Yes | Market name when available. |
+| `earnedSoFarUsdc` | string | Yes | USDC payable if this market settled now. |
+| `pendingSettlement` | boolean | Yes | Whether earning has stopped and settlement is pending. |
+| `estimatedRewardUsdc` | string or null | Yes | Estimated settlement amount for a pending market; `null` for an active market. |
+
+`YesterdaySettledRewards`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `totalPaidUsdc` | string | Yes | Total USDC across yesterday's payout rows. |
+| `perMarket` | `YesterdayMarketPayout[]` | Yes | Yesterday's per-market payouts. |
+
+`YesterdayMarketPayout` includes `marketId`, nullable `marketSlug` and `marketName`, `amountUsdc`, `status`, and optional `txHash`.
+
+## Get My Qualifying Orders
+
+```text
+GET /api/v1/rewards/me/qualifying-orders
+```
+
+**Authentication:** `API key HMAC`
+
+Returns only your resting orders that currently qualify for Liquidity (Maker) Rewards. Non-qualifying orders and internal scoring values are not returned.
+
+Response type: `QualifyingOrder[]`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `orderId` | UUID string | Yes | Order UUID. |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `marketName` | string or null | Yes | Market name when available. |
+| `side` | enum string | Yes | `BUY` or `SELL`. |
+| `price` | number | Yes | Order price from `0` to `1`. |
+| `sizeUsdc` | string | Yes | Remaining resting USDC notional, formatted to 6 decimal places. |
+
+## Get My Reward History
+
+```text
+GET /api/v1/rewards/me/history
+```
+
+**Authentication:** `API key HMAC`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `20`. |
+| `total` | boolean | No | Include a bounded total count. Default `false`. |
+
+Response type: `Pagination<UserPayoutHistoryItem>`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `marketSlug` | string or null | Yes | Market slug when available. |
+| `marketName` | string or null | Yes | Market name when available. |
+| `epochDate` | string | Yes | UTC reward date in `YYYY-MM-DD` format. |
+| `earnedUsdc` | string | Yes | USDC earned before any carried balance. |
+| `carriedInUsdc` | string | Yes | USDC carried in from an earlier payout. |
+| `amountUsdc` | string | Yes | Final USDC amount for the row. |
+| `status` | enum string | Yes | `PENDING`, `PAID`, `CARRIED`, `ROLLED_UP`, `FAILED`, `CANCELLED` or `NEEDS_INVESTIGATION`. |
+| `txHash` | string | No | Payout transaction hash when available. |
+| `paidAt` | string (date-time) | No | Time the payout was marked paid. |
+
+## List Reward Markets
+
+```text
+GET /api/v1/rewards/markets/pools
+```
+
+**Authentication:** `Public`
+
+Response type: `MarketReward[]`.
+
+Each row includes `marketId`, nullable `marketSlug` and `marketName`, nullable `rewardUsdc`, `enabled`, `accruingNow`, nullable `rewardStartAt` and `rewardEndAt`, `maxDistanceFromMid`, `extremeMaxDistanceFromMid`, and `minOrderSizeUsdc`.
+
+`rewardUsdc` is the fixed reward committed for the current reward period. It is `null` until a committed reward exists. Use `accruingNow`, not market lifecycle status, to determine whether qualifying orders are currently earning rewards.
+
+## Get Market Reward
+
+```text
+GET /api/v1/rewards/markets/{marketId}/pool
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+
+Response type: `MarketRewardDetail`.
+
+Returns the fields from `MarketReward` plus `eventId`, `eventSlug`, `eventName`, `isMultiMarket`, and `isActive`.
+
+## Get Rewards Leaderboard
+
+```text
+GET /api/v1/rewards/leaderboard
+```
+
+**Authentication:** `Public` with optional user authentication
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `window` | enum string | No | `24h`, `week` or `all`. Default `24h`. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Results per page. Default `20`, maximum `100`. |
+
+Each leaderboard row contains `rank`, `userId`, optional `displayName`, `isCurrentUser`, and `earnedUsdc`. No raw scoring units, reward share, projection, trading P&L or volume values are returned.
+
+## Claim Rewards
+
+```text
+POST /api/v1/rewards/me/claim
+```
+
+**Authentication:** `API key HMAC`
+
+Rate limit: 6 requests per minute.
+
+The request has no body. A dispatched claim is asynchronous; poll the returned `pollUrl` or listen for `user-mp-claim-update` on the authenticated WebSocket.
+
+Response type: `ClaimResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `accepted` | boolean | Yes | Whether claim dispatch was accepted. |
+| `outcome` | enum string | Yes | `dispatched`, `nothing-to-claim`, `below-threshold`, `in-flight` or `error`. |
+| `claimableAmountUsdc` | string | Yes | Claimable USDC at decision time. |
+| `recipientCount` | integer | Yes | Number of recipient addresses, normally `0` or `1`. |
+| `rowCount` | integer | Yes | Number of market/reward-period rows included. |
+| `pollUrl` | string | No | History path to poll after dispatch. |
+| `message` | string | No | Explanation for a non-dispatched outcome. |

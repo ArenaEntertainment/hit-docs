@@ -357,6 +357,13 @@ Public events:
 | `orderbook` | Server to client | Order book snapshot |
 | `orderbook-price-change` | Server to client | Price level changes |
 | `orderbook-error` | Server to client | Snapshot or stream error |
+| `crypto-price-connect` | Client to server | Array of allowlisted crypto symbols |
+| `crypto-price-disconnect` | Client to server | Array of crypto symbols |
+| `crypto-price-history` | Server to client | Initial price history for a subscribed symbol |
+| `crypto-price` | Server to client | Live crypto price tick |
+| `crypto-price-error` | Server to client | Per-symbol subscription error |
+| `global-trade` | Server to client | Automatic site-wide confirmed trade update |
+| `live-volume` | Server to client | Automatic absolute market and event volume update |
 | `event-connect` | Client to server | Event UUID |
 | `event-disconnect` | Client to server | Event UUID |
 | `event-onchain-update` | Server to client | Market or event status update |
@@ -378,6 +385,5 @@ User events:
 | `collateral-balance` | Server to client | Proxy wallet collateral balance |
 | `collateral-balance-eoa` | Server to client | EOA collateral balance |
 | `transaction` | Server to client | Transaction update |
-| `user-mp-update` | Server to client | Rewards update |
-| `user-mp-claim-update` | Server to client | Rewards claim update |
+| `user-mp-claim-update` | Server to client | Rewards claim dispatch notification; the legacy event name remains live |
 | `order-speed-bump-pending` | Server to client | Order delayed before matching |

@@ -18,6 +18,7 @@ Query parameters:
 | `eventStatus` | enum string | No | `DRAFT`, `ACTIVE`, `RESOLVED` or `ENDED`. |
 | `term` | string | No | Search event names, slugs and descriptions. |
 | `category` | UUID string | No | Category ID. |
+| `tag` | UUID string | No | Tag ID. When `category` is also supplied, both filters must match. |
 | `ends` | enum string | No | `TODAY`, `THIS_WEEK` or `THIS_MONTH`. |
 | `addedWithin` | enum string | No | `LAST_24H`, `LAST_7D` or `LAST_30D`. |
 | `minLiquidity` | number | No | Minimum USD liquidity. |
@@ -27,15 +28,18 @@ Query parameters:
 | `endDateFrom` | string (date-time) | No | Include events ending on or after this timestamp. |
 | `endDateTo` | string (date-time) | No | Include events ending on or before this timestamp. |
 | `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
+| `includeResolution` | boolean | No | Include the `resolution` timeline on each market. Default `false`. |
 | `protected` | boolean | No | Include protected events. |
 | `single` | boolean | No | `true` for single-market events, `false` for multi-market events. |
-| `sortBy` | enum string | No | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug` or `liquidity`. |
+| `sortBy` | enum string | No | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `tradeVolumeUsd24h`, `createdAt`, `eventStatus`, `slug` or `liquidity`. |
 | `order` | enum string | No | `ASC` or `DESC`. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `10`. |
 | `total` | boolean | No | Include total count. Default `true`. |
 
 When `sortBy=liquidity`, send `minLiquidity` or `maxLiquidity`.
+
+For public callers, nested markets with `status=DRAFT` are omitted. Pagination totals are capped server-side; when the real count exceeds the cap, `total` contains the cap and `totalCapped` is `true`.
 
 Response type: `Pagination<Event>`.
 
@@ -58,6 +62,11 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
+| `includeResolution` | boolean | No | Include the `resolution` timeline on each market. Default `false`. |
+| `marketScope` | enum string | No | `AUTO`, `RECENT` or `ALL`. Public default `AUTO`; admin default `ALL`. |
+| `marketLimit` | integer | No | Number of markets returned when the effective scope is `RECENT`. Default `50`, range `1` to `200`. |
+
+`AUTO` uses a recent bounded window for series-layout events and otherwise returns all public markets. Public responses omit DRAFT markets even when `marketScope=ALL`.
 
 Response type: `Event`.
 
@@ -89,11 +98,12 @@ Response type: `number`.
 | `createdBy` | UUID string | Yes | Creator user ID. |
 | `updatedAt` | string (date-time) | Yes | Last update timestamp. |
 | `startDate` | string (date-time) | Yes | Event start timestamp. |
-| `endDate` | string (date-time) | Yes | Event end timestamp. |
+| `endDate` | string (date-time) or null | Yes | Event end timestamp; unbounded multi-market events can return `null`. |
 | `icon` | string | Yes | Event icon URL. |
 | `eventStatus` | enum string | Yes | `DRAFT`, `ACTIVE`, `RESOLVED` or `ENDED`. |
 | `protected` | boolean | Yes | Whether the event is protected. |
 | `single` | boolean | Yes | Whether the event has one market. |
+| `negRisk` | boolean | Yes | Whether this is a mutually exclusive negative-risk event. |
 | `isDetermined` | boolean | Yes | Whether the event's winning market has been determined. |
 | `winningMarketId` | UUID string or null | No | Winning market UUID for resolved multi-market events. |
 | `feeBips` | integer or null | No | Event fee in basis points. |
@@ -107,8 +117,8 @@ Response type: `number`.
 | `metadata` | object | No | Optional JSON metadata. |
 | `templateId` | UUID string | No | Template UUID when generated from a template. |
 | `categories` | `Category[]` | No | Event categories. |
+| `tags` | `Tag[]` | No | Normalized tag assignments when loaded. |
 | `markets` | `Market[]` | Yes | Markets in the event. |
-| `priceTargetConfig` | object | No | Price-target configuration when present. |
 | `isInitialized` | boolean | Yes | Whether the event has been initialized on chain. |
 | `totalVolumeUSD` | string | No | Total trade volume across event markets. Present when volume is calculated. |
 | `liquidity` | string | No | Total pending-order liquidity. Present when liquidity is calculated. |
@@ -119,8 +129,12 @@ Response type: `number`.
 | --- | --- | --- | --- |
 | `id` | UUID string | Yes | Market UUID. |
 | `name` | string | Yes | Market name. |
+| `slug` | string | Yes | Market URL slug. |
 | `createdAt` | string (date-time) | Yes | Creation timestamp. |
 | `updatedAt` | string (date-time) | Yes | Last update timestamp. |
+| `startDate` | string (date-time) or null | No | Market start timestamp. |
+| `endDate` | string (date-time) or null | No | Market end timestamp. |
+| `description` | string or null | No | Market description. |
 | `chance` | number | Yes | Current market chance. |
 | `status` | enum string | Yes | `DRAFT`, `ACTIVE` or `RESOLVED`. |
 | `icon` | string | Yes | Market icon URL. |
@@ -144,6 +158,7 @@ Response type: `number`.
 | `isResolved` | boolean | Yes | Whether the market is resolved. |
 | `isRegistered` | boolean | Yes | Whether the market is registered on chain. |
 | `isPaused` | boolean | Yes | Whether the market is paused. |
+| `hidden` | boolean | Yes | Whether the market is hidden from the public event page. |
 | `marketResolvedTo` | string | Yes | Raw resolved outcome value. |
 | `marketId` | string | Yes | On-chain market ID. |
 | `negRisk` | boolean | Yes | Whether the market uses negative-risk resolution. |
@@ -153,6 +168,19 @@ Response type: `number`.
 | `questionIndex` | integer or null | No | Question index for multi-market events. |
 | `tradeVolumeUsd` | string | No | All-time trade volume in USD. |
 | `tradeVolumeUsd24h` | string | No | 24-hour trade volume in USD. |
+| `proposedAt` | string (date-time) or null | No | Current proposal timestamp. |
+| `proposedPrice` | string or null | No | Current UMA proposed value. |
+| `resolution` | object | No | Resolution timeline, present when `includeResolution=true`. |
+| `priceTargetConfig` | object | No | Per-market price-target configuration when present. |
+
+## Tag
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Tag UUID. |
+| `slug` | string | Yes | Tag slug. |
+| `label` | string | Yes | Display label. |
+| `type` | string | Yes | Tag taxonomy type. |
 
 ## Category
 

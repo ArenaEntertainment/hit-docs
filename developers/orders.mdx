@@ -22,6 +22,8 @@ Hit accepts low-level order payloads built from outcome token amounts.
 | `feeRateBps` | Client-signed only | Must match the market `orderFeeRateBps` |
 | `signature` | Optional | Include for client-signed orders; omit when using server-side session signer |
 | `priceUint` | Optional | Server-compatible price integer when your client already computes it |
+| `idempotencyKey` | Optional | UUID v4 used to deduplicate repeated submission of the same logical order |
+| `postOnly` | Optional | Maker-only GTC order; rejected if it would cross the book |
 
 Amounts use 6 decimals:
 
@@ -248,20 +250,21 @@ Filters:
 | Query | Description |
 | --- | --- |
 | `market` | Market UUID |
-| `status` | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED` |
+| `status` | `PENDING`, `EXECUTING`, `EXECUTED` or `REJECTED`; use the paginated endpoint for `CANCELLED` |
 | `maker` | Maker wallet address |
 | `marketName` | Case-insensitive partial market name |
 | `sortBy` | Order sort field, default `created_at` |
 | `order` | `ASC` or `DESC` |
 
-Use `GET /orders/paginated` for paginated results.
+When `status` is omitted, `GET /orders` returns all non-cancelled statuses. Passing `status=CANCELLED` returns `400`.
+
+Use `GET /orders/paginated` for paginated results and cancelled history. Its omitted-status default is active orders only (`PENDING` and `EXECUTING`). `total` is opt-in and capped; use `cursor`, `hasMore` and `nextCursor` for efficient deep pagination.
 
 ## Cancel Orders
 
 | Request | Description |
 | --- | --- |
 | `POST /orders/{id}/cancel` | Cancel one order and return the updated order |
-| `DELETE /orders/{id}` | Delete one order and return `{ "success": true }` |
 | `POST /orders/batch-cancel` | Cancel up to 50 order IDs |
 | `POST /orders/cancel` | Cancel all orders in one market |
 | `POST /orders/cancel-all` | Cancel all your orders |

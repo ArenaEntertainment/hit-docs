@@ -166,18 +166,18 @@ description: Everything you need to know about how Hit works.
 ## Rewards
 
 <AccordionGroup>
-  <Accordion title="What are liquidity rewards?">
-    On selected markets with liquidity rewards enabled, users who post qualifying resting orders earn a share of that market's daily USDC rewards pool. Rewards accrue while your qualifying liquidity is live and settle daily. See [Liquidity rewards](/markets/liquidity) for more.
+  <Accordion title="What are Liquidity (Maker) Rewards?">
+    On selected markets, users who post qualifying resting orders can earn a share of that market's committed USDC reward. The order book is sampled throughout each UTC reward period, and rewards settle after the period ends. Settled balances can be claimed once they reach the minimum shown in-product. See [Liquidity (Maker) Rewards](/markets/liquidity) for more.
   </Accordion>
 
-  <Accordion title="How do I qualify for liquidity rewards?">
+  <Accordion title="How do I qualify for Liquidity (Maker) Rewards?">
     To be eligible:
 
-    - The market must have liquidity rewards turned on.
-    - Your resting orders must meet the market's spread and size requirements, shown in-product.
-    - Your orders must stay live long enough to be counted.
+    - The market must have a reward committed for the current period and be accruing rewards.
+    - Your resting orders must meet the market's price-distance and minimum remaining-size requirements.
+    - Your orders must stay live long enough to be sampled and remain sufficiently funded.
 
-    One-sided liquidity earns, and quoting both sides (both Hit and Miss) earns a boost. The exact scoring metrics are not published. Place a qualifying resting limit order on any eligible market to start earning.
+    Quotes closer to the midpoint and at the top of the book generally receive more weight. Matched liquidity on both sides receives a boost; near extreme probabilities, unmatched one-sided liquidity receives no reward weight. Exact scoring parameters are not published.
   </Accordion>
 </AccordionGroup>
 

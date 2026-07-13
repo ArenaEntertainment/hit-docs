@@ -55,7 +55,7 @@
           },
           {
             "group": "Rewards",
-            "pages": ["markets/liquidity"]
+            "pages": ["markets/liquidity", "markets/taker-rewards"]
           },
           {
             "group": "FAQs",
@@ -105,15 +105,15 @@
             "pages": [
               "api-reference/events",
               "api-reference/markets",
-              "api-reference/prices",
-              "api-reference/resolution"
+              "api-reference/prices"
             ]
           },
           {
             "group": "Trading",
             "pages": [
               "api-reference/orders",
-              "api-reference/portfolio"
+              "api-reference/portfolio",
+              "api-reference/rewards"
             ]
           },
           {

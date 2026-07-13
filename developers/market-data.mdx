@@ -1,6 +1,6 @@
 ---
 title: Market Data
-description: Discover markets and read prices, order books, history and resolution status
+description: Discover markets and read prices, order books, history and resolution data
 ---
 
 Most market data is public and can be read without authentication.
@@ -24,7 +24,9 @@ Common filters:
 | `addedWithin` | `LAST_24H`, `LAST_7D` or `LAST_30D` |
 | `minLiquidity`, `maxLiquidity` | Filter by USD liquidity |
 | `includeVolume` | Include `tradeVolumeUsd` and `tradeVolumeUsd24h` |
-| `sortBy` | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `createdAt`, `eventStatus`, `slug` or `liquidity` |
+| `includeResolution` | Include the market resolution timeline |
+| `tag` | Tag UUID; combines with `category` when both are supplied |
+| `sortBy` | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `tradeVolumeUsd24h`, `createdAt`, `eventStatus`, `slug` or `liquidity` |
 | `order` | `ASC` or `DESC` |
 | `page`, `limit`, `total` | Pagination controls |
 
@@ -40,7 +42,7 @@ type EventResponse = {
   data: Array<{
     id: string;
     name: string;
-    marketsView: Array<{
+    markets: Array<{
       id: string;
       name: string;
       tokenId1: string;
@@ -62,7 +64,7 @@ if (!response.ok) {
 }
 
 const events = (await response.json()) as EventResponse;
-const firstMarket = events.data[0]?.marketsView[0];
+const firstMarket = events.data[0]?.markets[0];
 
 console.log(firstMarket?.id, firstMarket?.tokenId1, firstMarket?.tokenId2);
 ```
@@ -86,7 +88,7 @@ response = requests.get(
 response.raise_for_status()
 
 events = response.json()["data"]
-first_market = events[0]["marketsView"][0]
+first_market = events[0]["markets"][0]
 
 print(first_market["id"], first_market["tokenId1"], first_market["tokenId2"])
 ```
@@ -112,7 +114,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .error_for_status()?
         .json()?;
 
-    let market = &events["data"][0]["marketsView"][0];
+    let market = &events["data"][0]["markets"][0];
     println!(
         "{} {} {}",
         market["id"], market["tokenId1"], market["tokenId2"]
@@ -131,6 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | --- | --- |
 | `GET /events/{id_or_slug}` | Event with nested markets |
 | `GET /events/{id_or_slug}?includeVolume=true` | Event plus volume fields |
+| `GET /events/{id_or_slug}?includeResolution=true` | Event plus each market's resolution timeline |
 | `GET /events/{id_or_slug}/volume` | Total USD event volume |
 | `GET /markets?ids=id1,id2,id3` | Markets by UUID |
 | `GET /markets/{id_or_slug}` | Single market |
@@ -151,8 +154,8 @@ Response:
   "market": "market-uuid",
   "asset_id": "TOKEN_ID",
   "timestamp": 1778748000000,
-  "bids": [{ "price": "0.62", "size": "25" }],
-  "asks": [{ "price": "0.64", "size": "10" }],
+  "bids": [{ "price": "0.62", "size": "25", "numOrders": 2 }],
+  "asks": [{ "price": "0.64", "size": "10", "numOrders": 1 }],
   "tick_size": "0.01"
 }
 ```
@@ -168,7 +171,7 @@ Response:
 ```json
 {
   "price": "0.63",
-  "side": "BUY"
+  "side": "buy"
 }
 ```
 
@@ -184,24 +187,16 @@ curl 'https://hit.com/api/v1/price-history?token=TOKEN_ID&interval=1D&fidelity=5
 | `interval` | `1H`, `6H`, `1D`, `1W`, `1M` or `ALL` |
 | `fidelity` | Minutes between points, from `1` to `1440` |
 | `page`, `limit`, `total` | Pagination controls |
+| `strictFidelity` | Reject fidelity above the interval maximum instead of clamping it |
 | `sortBy` | `timestamp` or `price` |
 | `order` | `ASC` or `DESC` |
 
-## Historical Spreads
+The maximum fidelity is `5` minutes for `1H`, `15` for `6H`, `60` for `1D`, `240` for `1W`, and `1440` for `1M` or `ALL`. Larger values are clamped unless `strictFidelity=true`. Large totals are capped; check `totalCapped` before treating `total` as exact.
+
+## Resolution Data
 
 ```bash
-curl 'https://hit.com/api/v1/historical-data/spreads/MARKET_ID?range=1D&token=1'
+curl 'https://hit.com/api/v1/events/EVENT_ID?includeResolution=true'
 ```
 
-| Query | Description |
-| --- | --- |
-| `range` | `1H`, `6H`, `1D`, `1W`, `1M`, `ALL` or `LATEST` |
-| `token` | `0` for both outcomes, `1` for outcome 1, `2` for outcome 2 |
-
-## Resolution Status
-
-```bash
-curl 'https://hit.com/api/v1/resolution/market/MARKET_ID/status'
-```
-
-This endpoint reads current resolution state and is rate limited to 30 requests per minute.
+Each returned market includes a `resolution` object with its current status, final or proposed outcome labels, dispute state and timestamp. Public event responses omit DRAFT markets.
