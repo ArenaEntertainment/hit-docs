@@ -167,7 +167,7 @@ description: Everything you need to know about how Hit works.
 
 <AccordionGroup>
   <Accordion title="What are Liquidity (Maker) Rewards?">
-    On selected markets, users who post qualifying resting orders can earn a share of that market's committed USDC reward. The order book is sampled throughout each UTC reward period, and rewards settle after the period ends. Settled balances can be claimed once they reach the minimum shown in-product. See [Liquidity (Maker) Rewards](/markets/liquidity) for more.
+    On selected markets, users who post qualifying resting orders can earn a share of that market's committed USDC reward. The order book is sampled at random times throughout each UTC reward period, and an order earns when it is live and qualifying at the moment of a sample. The daily period rolls at 00:00 UTC, with settlement scheduled for 00:10 UTC. Settled balances can be claimed once they reach the minimum shown in-product. See [Liquidity (Maker) Rewards](/markets/liquidity) for more.
   </Accordion>
 
   <Accordion title="How do I qualify for Liquidity (Maker) Rewards?">
@@ -175,9 +175,9 @@ description: Everything you need to know about how Hit works.
 
     - The market must have a reward committed for the current period and be accruing rewards.
     - Your resting orders must meet the market's price-distance and minimum remaining-size requirements.
-    - Your orders must stay live long enough to be sampled and remain sufficiently funded.
+    - Your orders must be live when a random sample occurs. You can update them frequently, but keeping qualifying orders live consistently gives you the best chance of being included in each sample.
 
-    Quotes closer to the midpoint and at the top of the book generally receive more weight. Matched liquidity on both sides receives a boost; near extreme probabilities, unmatched one-sided liquidity receives no reward weight. Exact scoring parameters are not published.
+    With a midpoint above 4¢ and below 96¢, one-sided and two-sided liquidity can earn. Two-sided liquidity and top-of-book quotes receive bonuses, while quotes closer to the midpoint accrue rewards faster. At 4¢ or below, or 96¢ or above, only two-sided liquidity is rewarded. Exact scoring parameters and the sampling schedule are not published.
   </Accordion>
 </AccordionGroup>
 

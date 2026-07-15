@@ -5,7 +5,7 @@ description: Earn USDC by providing useful liquidity on eligible Hit markets
 
 Hit rewards users who provide useful liquidity on eligible markets. Each eligible market has a USDC reward committed for a specific reward period. Post qualifying resting orders and keep them live to earn a share of that market's reward.
 
-The order book is sampled throughout the reward period. Your final share reflects how useful your qualifying liquidity was across those samples relative to other participants.
+The order book is sampled at random times throughout the reward period. You earn from each sample where your order is live and qualifies. Your final share reflects your qualifying liquidity across those samples relative to other participants.
 
 ## The Reward Amount
 
@@ -27,23 +27,30 @@ The displayed amount is the total committed reward available for that market's c
 
 ## How It Works
 
-Post resting orders that make the market easier to trade. To count, an order must pass all of the market's current qualification checks when the order book is sampled:
+Post resting orders that make the market easier to trade. Each random sample is a separate opportunity to earn. To count in a sample, an order must be live at that moment and pass the market's current qualification checks:
 
 - **Quote near the midpoint** — the order must be within the market's qualifying price distance. Markets near 0% or 100% probability use a tighter range.
 - **Meet the minimum remaining size** — the unfilled part of the order must meet the market's minimum USDC notional. A partial fill can move an order below the minimum.
-- **Stay live long enough** — an order must reach the minimum resting age before it can count. Brief place-and-cancel activity may never be sampled.
-- **Keep the order funded** — buy orders must have enough available USDC balance and allowance; sell orders must have enough approved outcome tokens. Orders exceeding their available backing do not count.
+- **Be live when sampled** — you can update your orders frequently, but the sampling schedule is random. Keeping qualifying orders live consistently gives them the best chance of being present for every sample. Posting only for brief windows makes it likely that you will miss random samples.
 
-Among qualifying orders, quotes closer to the midpoint and at the top of the book generally receive more weight. Providing useful depth on both sides increases the weight of matched two-sided liquidity. Near extreme probabilities, unmatched one-sided liquidity receives no reward weight.
+### How Qualifying Liquidity Is Weighted
 
-At each sample, the available weight is divided among qualifying users according to their scores. Those sampled shares accumulate over the reward period, and the committed USDC reward is divided using the final cumulative shares. Exact curves, multipliers, sampling intervals, and other scoring parameters are not published and may change.
+For markets with a midpoint above 4¢ and below 96¢, both one-sided and two-sided liquidity can earn. Qualifying liquidity receives more weight when:
+
+- **It is two-sided** — quoting both sides earns a bonus.
+- **It is at the top of the book** — the best qualifying quotes earn a bonus.
+- **It is closer to the midpoint** — quotes accrue rewards faster as they move closer to the midpoint within the qualifying range.
+
+When the midpoint is **4¢ or below, or 96¢ or above**, the market is in tail mode. Only two-sided liquidity is rewarded in tail mode; unmatched one-sided liquidity earns nothing.
+
+At each random sample, the available weight is divided among qualifying users according to these factors. Those sampled shares accumulate over the reward period, and the committed USDC reward is divided using the final cumulative shares. Exact curves, multipliers, and the sampling schedule are not published and may change.
 
 ## Eligibility
 
 To earn Liquidity (Maker) Rewards:
 
 - The market must have a reward committed for the current reward period and be accruing rewards at that time.
-- Your resting orders must satisfy the market's price-distance, remaining-size, age, and funding requirements when sampled.
+- Your resting orders must be live and satisfy the market's price-distance and remaining-size requirements when randomly sampled.
 - Your account must not be excluded from the rewards program.
 
 <Note>
@@ -54,9 +61,9 @@ To earn Liquidity (Maker) Rewards:
 
 ## Settlement and Claims
 
-Rewards settle after the UTC reward period ends. Until settlement, any earned amount shown in-product is an estimate: other participants can add, remove, or improve their liquidity and change the final shares.
+The daily reward period rolls at 00:00 UTC. Settlement is scheduled for 00:10 UTC, after which settled rewards are added to your claimable USDC balance. Until settlement, any earned amount shown in-product is an estimate: other participants can add, remove, or improve their liquidity and change the final shares.
 
-After settlement, unpaid rewards are added to your claimable USDC balance. You can claim once your combined claimable balance reaches the minimum shown in-product. Claims are processed asynchronously on Base, so a submitted claim may remain in progress until its on-chain transaction is confirmed. Balances below the minimum remain available to accumulate with later rewards.
+You can claim once your combined claimable balance reaches the minimum shown in-product. Claims are processed asynchronously on Base, so a submitted claim may remain in progress until its on-chain transaction is confirmed. Balances below the minimum remain available to accumulate with later rewards.
 
 ## Terms and Conditions
 
