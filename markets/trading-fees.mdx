@@ -1,76 +1,476 @@
 ---
 title: Trading Fees
-description: Understand Hit's maker and taker fee structure
+description: Understand Hit's taker fees and why makers never pay trading fees
+mode: wide
 ---
 
-Hit uses a maker-taker fee model to encourage liquidity in the order book.
+export const FeeExplorer = () => {
+  const hitRed = "#FF0003"
+  const hitBlue = "#3F87D0"
+  const [feeRate, setFeeRate] = useState(3)
+  const [selectedPriceCents, setSelectedPriceCents] = useState(50)
+  const chartPrices = Array.from({ length: 99 }, (_, index) => (index + 1) / 100)
+  const tablePrices = [
+    0.01,
+    ...Array.from({ length: 19 }, (_, index) => (index + 1) * 0.05),
+    0.99,
+  ]
+  const selectedPrice = selectedPriceCents / 100
+  const feeRateDecimal = feeRate / 100
+
+  const setBoundedFeeRate = (value) => {
+    if (!Number.isNaN(value)) {
+      setFeeRate(Math.min(10, Math.max(0, value)))
+    }
+  }
+
+  const formatShares = (value) =>
+    value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")
+
+  const formatShareAmount = (value) =>
+    `${formatShares(value)} ${Number(value.toFixed(2)) === 1 ? "share" : "shares"}`
+
+  const formatPercent = (value) =>
+    `${value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")}%`
+
+  const formatMoney = (value) => {
+    if (value === 0) return "$0.00"
+    const [whole, decimals = ""] = value
+      .toFixed(4)
+      .replace(/0+$/, "")
+      .replace(/\.$/, "")
+      .split(".")
+    return `$${whole}.${decimals.padEnd(2, "0")}`
+  }
+
+  const calculateFees = (price) => {
+    const grossValue = 100 * price
+    const feeValue = 100 * feeRateDecimal * Math.min(price, 1 - price)
+    const feeShares = feeValue / price
+    const buyFeePercent = (feeShares / 100) * 100
+    const sellFeePercent = (feeValue / 100) * 100
+
+    return {
+      grossValue,
+      feeValue,
+      feeShares,
+      buyFeePercent,
+      sellFeePercent,
+      netBuyShares: 100 - feeShares,
+      netSellProceeds: grossValue - feeValue,
+    }
+  }
+
+  const selectedFees = calculateFees(selectedPrice)
+  const chart = { left: 2, top: 2, width: 96, height: 96 }
+  const chartBottom = chart.top + chart.height
+  const feePercentMax = feeRate
+  const xFor = (price) =>
+    chart.left + ((price - 0.01) / 0.98) * chart.width
+  const yFor = (value) =>
+    chartBottom - (feePercentMax > 0 ? value / feePercentMax : 0) * chart.height
+  const buyFeePercentPoints = chartPrices.map((price) => ({
+    price,
+    value: calculateFees(price).buyFeePercent,
+  }))
+  const sellFeePercentPoints = chartPrices.map((price) => ({
+    price,
+    value: calculateFees(price).sellFeePercent,
+  }))
+  const linePath = (points) =>
+    points
+      .map(
+        (point, index) =>
+          `${index === 0 ? "M" : "L"} ${xFor(point.price)} ${yFor(point.value)}`,
+      )
+      .join(" ")
+  const xTicks = [0.01, 0.25, 0.5, 0.75, 0.99]
+  const yTicks = [1, 0.5, 0]
+
+  const renderChart = ({
+    chartId,
+    eyebrow,
+    title,
+    buyPoints,
+    sellPoints,
+  }) => {
+    const buyPath = linePath(buyPoints)
+    const sellPath = linePath(sellPoints)
+
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              {eyebrow}
+            </div>
+            <div className="mt-1 font-semibold text-gray-950 dark:text-white">
+              {title}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-300">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-0.5 w-5" style={{ backgroundColor: hitBlue }} />
+                BUY
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-5 border-t-2 border-dashed" style={{ borderColor: hitRed }} />
+                SELL
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              At ${selectedPrice.toFixed(2)}
+            </div>
+            <div className="mt-1 flex items-center justify-end gap-3 text-sm font-semibold">
+              <span className="text-blue-700 dark:text-blue-400">
+                BUY {formatPercent(selectedFees.buyFeePercent)}
+              </span>
+              <span className="text-red-700 dark:text-red-400">
+                SELL {formatPercent(selectedFees.sellFeePercent)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div role="region" aria-label={`${title} chart`}>
+          <div className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+            Fee rate (%)
+          </div>
+          <div className="flex min-w-0 gap-2">
+            <div className="flex h-56 w-10 shrink-0 flex-col justify-between py-0.5 text-right text-xs text-gray-500 dark:text-gray-400">
+              {yTicks.map((fraction) => (
+                <span key={fraction}>{formatPercent(feePercentMax * fraction)}</span>
+              ))}
+            </div>
+            <div className="min-w-0 flex-1">
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="block h-56 w-full"
+                role="img"
+                aria-labelledby={`${chartId}-title`}
+              >
+                <title id={`${chartId}-title`}>
+                  BUY and SELL fee percentage curves from a share price of $0.01 to $0.99
+                </title>
+                <desc>
+                  The BUY fee stays at the base rate through $0.50 and then falls. The SELL fee peaks at $0.50 and falls toward both price extremes.
+                </desc>
+
+                {yTicks.map((fraction) => {
+                  const y = chart.top + (1 - fraction) * chart.height
+                  return (
+                    <line
+                      key={fraction}
+                      x1={chart.left}
+                      x2={chart.left + chart.width}
+                      y1={y}
+                      y2={y}
+                      stroke="currentColor"
+                      className="text-gray-200 dark:text-gray-800"
+                      strokeDasharray="4 6"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  )
+                })}
+
+                <path
+                  d={buyPath}
+                  fill="none"
+                  stroke={hitBlue}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <path
+                  d={sellPath}
+                  fill="none"
+                  stroke={hitRed}
+                  strokeWidth="3"
+                  strokeDasharray="8 6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <line
+                  x1={xFor(selectedPrice)}
+                  x2={xFor(selectedPrice)}
+                  y1={chart.top}
+                  y2={chartBottom}
+                  stroke="currentColor"
+                  className="text-gray-400 dark:text-gray-600"
+                  strokeWidth="1.5"
+                  strokeDasharray="4 5"
+                  opacity="0.65"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+              <div className="relative mt-2 h-4 text-xs text-gray-500 dark:text-gray-400">
+                {xTicks.map((price) => (
+                  <span
+                    key={price}
+                    className="absolute whitespace-nowrap"
+                    style={{
+                      left: `${xFor(price)}%`,
+                      transform:
+                        price === xTicks[0]
+                          ? "none"
+                          : price === xTicks[xTicks.length - 1]
+                            ? "translateX(-100%)"
+                            : "translateX(-50%)",
+                    }}
+                  >
+                    ${price.toFixed(2)}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-1 text-center text-xs font-medium text-gray-600 dark:text-gray-300">
+                Share price
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="not-prose my-6 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+      <div className="space-y-4 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+        <div>
+          <div className="text-sm font-semibold text-gray-950 dark:text-white">
+            Taker fee rate
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {[0, 1, 2, 3].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                aria-pressed={feeRate === preset}
+                onClick={() => setFeeRate(preset)}
+                className={`rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 ${feeRate === preset ? "text-red-700 dark:text-red-400" : "border-gray-300 text-gray-900 dark:border-gray-700 dark:text-white"}`}
+                style={feeRate === preset ? { borderColor: hitRed } : undefined}
+              >
+                {preset}%
+              </button>
+            ))}
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              Custom
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={feeRate}
+                onChange={(event) => setBoundedFeeRate(Number.parseFloat(event.target.value))}
+                className="w-20 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-gray-950 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                aria-label="Custom taker fee percentage"
+              />
+              %
+            </label>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400" aria-live="polite">
+          Buying or selling 100 shares with a {feeRate}% taker fee.
+        </p>
+      </div>
+
+      <div className="space-y-4 bg-gray-50 p-4 dark:bg-gray-900/30">
+        {renderChart({
+          chartId: "buy-sell-fee-curves",
+          eyebrow: "BUY + SELL",
+          title: "Contract-derived taker fee curves",
+          buyPoints: buyFeePercentPoints,
+          sellPoints: sellFeePercentPoints,
+        })}
+
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          BUY shows the fee as a percentage of filled shares. SELL shows the USDC fee per share as a percentage of its $1 payout. The dollar-equivalent fee is the same, but the percentage curves differ because the fee is paid in different assets.
+        </p>
+
+        <label className="block rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+          <div className="mb-3 flex items-center justify-between gap-4 text-sm">
+            <span className="font-semibold text-gray-950 dark:text-white">
+              Inspect a share price
+            </span>
+            <span className="font-semibold text-red-700 dark:text-red-400">
+              ${selectedPrice.toFixed(2)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="99"
+            step="1"
+            value={selectedPriceCents}
+            onChange={(event) => setSelectedPriceCents(Number.parseInt(event.target.value))}
+            className="w-full"
+            style={{ accentColor: hitRed }}
+            aria-label="Share price in cents"
+          />
+        </label>
+
+        <div className="grid gap-3 sm:grid-cols-3" aria-live="polite">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950">
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Gross value
+            </div>
+            <div className="mt-2 text-xl font-semibold text-gray-950 dark:text-white">
+              {formatMoney(selectedFees.grossValue)}
+            </div>
+          </div>
+          <div
+            className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950"
+            style={{ borderTopColor: hitBlue, borderTopWidth: "3px" }}
+          >
+            <div className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+              BUY receives
+            </div>
+            <div className="mt-2 text-xl font-semibold text-blue-700 dark:text-blue-400">
+              {formatShareAmount(selectedFees.netBuyShares)}
+            </div>
+            <div className="mt-1 text-xs text-blue-700 dark:text-blue-400">
+              Fee: {formatShareAmount(selectedFees.feeShares)}
+            </div>
+          </div>
+          <div
+            className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950"
+            style={{ borderTopColor: hitRed, borderTopWidth: "3px" }}
+          >
+            <div className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
+              SELL receives
+            </div>
+            <div className="mt-2 text-xl font-semibold text-red-700 dark:text-red-400">
+              {formatMoney(selectedFees.netSellProceeds)}
+            </div>
+            <div className="mt-1 text-xs text-red-700 dark:text-red-400">
+              Fee: {formatMoney(selectedFees.feeValue)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="overflow-y-auto"
+        style={{ maxHeight: "32rem" }}
+        tabIndex={0}
+        role="region"
+        aria-label="100-share BUY and SELL fee table"
+      >
+        <table className="w-full border-collapse text-left text-sm tabular-nums">
+          <caption className="sr-only">
+            100-share BUY and SELL fee comparison at selected prices from $0.01 to $0.99 at a {feeRate}% taker fee
+          </caption>
+          <thead className="sticky top-0 bg-white dark:bg-gray-950">
+            <tr className="border-b border-gray-200 dark:border-gray-800">
+              <th scope="col" className="px-4 py-3 font-semibold">Price</th>
+              <th scope="col" className="px-4 py-3 font-semibold">Gross value</th>
+              <th scope="col" className="px-4 py-3 font-semibold">BUY fee</th>
+              <th scope="col" className="px-4 py-3 font-semibold">SELL fee</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tablePrices.map((price) => {
+              const fees = calculateFees(price)
+
+              return (
+                <tr key={price} className="border-b border-gray-100 dark:border-gray-900">
+                  <th scope="row" className="px-4 py-2 font-medium">${price.toFixed(2)}</th>
+                  <td className="px-4 py-2">{formatMoney(fees.grossValue)}</td>
+                  <td className="px-4 py-2 text-blue-700 dark:text-blue-400">{formatShareAmount(fees.feeShares)}</td>
+                  <td className="px-4 py-2 text-red-700 dark:text-red-400">{formatMoney(fees.feeValue)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+Hit uses a maker-taker model to encourage liquidity in the order book. **Makers never pay trading fees.** Only takers may pay a fee, and the applicable rate is shown before you trade.
 
 ### Maker vs Taker Fees
 
 **Maker**
-A maker is a trader who adds liquidity to the [order book](/markets/order-book) by placing a [limit order](/markets/limit-orders) that doesn't immediately match with an existing order. Makers typically pay **0% fees**.
+A maker is a trader who adds liquidity to the [order book](/markets/order-book) by placing a [limit order](/markets/limit-orders) that doesn't immediately match with an existing order. Makers pay **0% fees**.
 
 **Taker**
 A taker is a trader who removes liquidity from the order book by placing an order that immediately matches with an existing order. This includes [market orders](/markets/market-orders) and limit orders that cross the spread. Takers may incur fees that scale with market certainty.
 
 <Info>
-  **Fees are often zero**: Many markets on Hit have 0% fees for both makers and
-  takers. When fees do apply, they're shown upfront on the trading ticket.
+  **Maker fees are always zero.** Many markets also have 0% taker fees. When a
+  taker fee applies, it's shown upfront on the trading ticket.
 </Info>
+
+### Fee Rates by Category
+
+The fee rate is the base rate used by the price-dependent fee curve.
+
+| Category | Taker Fee Rate | Maker Fee Rate |
+| :------- | :------------- | :------------- |
+| Crypto   | `0.03` (3%, 300 bps) | `0` (0%) |
+| Finance  | `0` (0%) | `0` (0%) |
+| Sport    | `0` (0%) | `0` (0%) |
+| Politics | `0` (0%) | `0` (0%) |
+| Tech     | `0` (0%) | `0` (0%) |
+| Science  | `0` (0%) | `0` (0%) |
+| Weather  | `0` (0%) | `0` (0%) |
+| Culture  | `0` (0%) | `0` (0%) |
+| Other    | `0` (0%) | `0` (0%) |
+
+<Note>
+  `0.03` is a 3% base taker fee, equivalent to 300 basis points. The trading
+  ticket shows the applicable fee before you confirm an order.
+</Note>
 
 ### How Taker Fees Scale
 
-When a market has taker fees, the actual fee depends on the current market price and whether you're buying or selling.
+When a market has taker fees, the fee depends on the share price. For the same number of shares at the same price, a BUY and SELL have the same dollar-equivalent fee, but the fee is paid differently.
 
-**Fee Structure**
+```text
+Fee value = shares × taker fee rate × min(p, 1 - p)
+BUY fee shares = fee value ÷ p
+BUY fee percentage = BUY fee shares ÷ shares × 100
+SELL fee percentage = fee value ÷ shares × 100
+BUY shares received = shares - BUY fee shares
+SELL USDC received = (shares × p) - fee value
+```
 
-- Markets have a base fee rate (e.g., 100 basis points = 1%).
-- Your actual fee scales based on the market price.
+Here, `p` is the share price from `0.01` to `0.99` and the taker fee rate is written as a decimal, so 3% is `0.03`. The SELL percentage expresses the USDC fee per share against that share's $1 maximum payout.
 
-#### Example: 1% Base Fee
-
-| Market Price | Buy: % of Spend | Sell: % of Proceeds |
-| :----------- | :-------------- | :------------------ |
-| 10¢          | 1.00%           | 0.10%               |
-| 20¢          | 1.00%           | 0.20%               |
-| 50¢          | 1.00%           | 0.50%               |
-| 80¢          | 0.25%           | 0.20%               |
-| 90¢          | 0.11%           | 0.10%               |
+<Info>
+  The calculator, chart, and table mirror Hit's smart-contract fee branches:
+  BUY fees are charged on outcome-token proceeds and SELL fees are charged on
+  collateral proceeds. Displayed values are rounded for readability; on-chain
+  integer division rounds down to the asset's smallest unit.
+</Info>
 
 **Buying Fees**
 
-- At prices ≤ 50¢: You pay the full base rate (e.g., 1%).
+- At prices ≤ 50¢: The fee is the base-rate percentage of the filled shares. At 3%, a 100-share fill has a 3-share fee.
 - At prices > 50¢: Fees decrease as the outcome becomes more certain.
-- Lowest fees when buying near 100¢ (outcome nearly decided).
+- The fee is deducted from the shares you receive.
 
 **Selling Fees**
 
-- Peak at 50¢ (maximum uncertainty).
-- Decrease symmetrically toward both 0¢ and 100¢.
-- Lowest fees when selling near the extremes (outcome nearly decided).
+- The fee in USDC peaks at 50¢.
+- The USDC fee decreases symmetrically toward both 0¢ and 100¢.
+- The fee is deducted from the USDC proceeds you receive.
 
-### How Fees Are Paid
+#### Interactive 100-Share BUY and SELL Example
 
-**Buy Orders**
+Choose a taker fee rate and share price to compare buying and selling the same 100 shares. The table shows \$0.01, five-cent increments from \$0.05 to \$0.95, and \$0.99.
 
-- Fees are deducted from the shares you receive.
-- You receive slightly fewer shares than the order size.
+<FeeExplorer />
 
-**Sell Orders**
-
-- Fees are deducted from the USDC you receive.
-- You receive slightly less USDC than the value of the shares.
-
-#### Example: Buying at 20¢
-
-```
-Market: 1% base fee, price = 20¢
-Order: Buy $100 worth of Hit shares
-
-Without fees: 500 shares
-Fee: 1% × 100 = \$1 in value ≈ 5 shares
-Net result: ~495 shares
-```
+<Note>
+  The chart and table assume all 100 shares fill at one price. If an order
+  fills at several prices, Hit calculates each fill separately and adds the fees.
+</Note>
 
 ### Multiple Price Levels
 
@@ -92,10 +492,10 @@ All fees are shown on the trading ticket before you place any order:
 
 **Want to minimize fees?**
 
-- Use [limit orders](/markets/limit-orders) that sit in the order book (makers typically pay 0%).
+- Use [limit orders](/markets/limit-orders) that sit in the order book. Makers never pay trading fees.
 - Avoid trading at 50% where uncertainty and fees are highest.
 
 **Need immediate execution?**
 
-- [Market orders](/markets/market-orders) execute instantly but incur taker fees.
+- [Market orders](/markets/market-orders) execute instantly and may incur taker fees.
 - The fee is shown before you confirm.
