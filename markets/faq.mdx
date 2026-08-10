@@ -68,7 +68,7 @@ description: Everything you need to know about how Hit works.
 
   <Accordion title="What is the difference between a market order and a limit order?">
     - **[Market order](/markets/market-orders)**: executes immediately at the best available price in the order book. Good for speed, but you may experience slippage on large orders.
-    - **[Limit order](/markets/limit-orders)**: lets you set the exact price you want. Your order sits in the order book until another trader matches it. Limit orders that don't immediately match typically pay 0% maker fees.
+    - **[Limit order](/markets/limit-orders)**: lets you set the exact price you want. Your order sits in the order book until another trader matches it. Limit orders that don't immediately match are maker orders and pay 0% trading fees.
 
     Limit orders are not guaranteed to fill; they only execute when the market reaches your price. You can cancel any unfilled order at no cost, and partial fills are normal.
   </Accordion>
@@ -125,10 +125,10 @@ description: Everything you need to know about how Hit works.
   <Accordion title="What are the trading fees?">
     Hit uses a maker-taker fee model:
 
-    - **Makers** (limit orders that add liquidity) typically pay 0% fees.
+    - **Makers** (limit orders that add liquidity) always pay 0% fees.
     - **Takers** (orders that immediately match) may incur fees that scale with the market price: fees are highest near 50¢ (maximum uncertainty) and decrease toward the extremes (0¢ and 100¢).
 
-    Many markets on Hit have 0% fees for both makers and takers. When fees do apply, they are shown upfront on the trading ticket before you confirm, and orders that don't execute incur no fees.
+    Maker fees are always 0%, and many markets also have 0% taker fees. When a taker fee applies, it is shown upfront on the trading ticket before you confirm, and orders that don't execute incur no fees.
  To minimise fees, use limit orders and avoid trading near 50¢.
 
     See [Trading fees](/markets/trading-fees) for the full breakdown and worked examples.
