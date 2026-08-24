@@ -29,6 +29,7 @@ Query parameters:
 | `endDateTo` | string (date-time) | No | Include events ending on or before this timestamp. |
 | `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
 | `includeResolution` | boolean | No | Include the `resolution` timeline on each market. Default `false`. |
+| `includeRewards` | boolean | No | Include each market's current-period reward opportunity as `reward`. Default `false`. |
 | `protected` | boolean | No | Include protected events. |
 | `single` | boolean | No | `true` for single-market events, `false` for multi-market events. |
 | `sortBy` | enum string | No | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `tradeVolumeUsd24h`, `createdAt`, `eventStatus`, `slug` or `liquidity`. |
@@ -85,6 +86,53 @@ Path parameters:
 | `id_or_slug` | UUID string or string | Yes | Event UUID or slug. |
 
 Response type: `number`.
+
+## Get Event Positions by User
+
+```text
+GET /api/v1/events/{id}/positions
+```
+
+**Authentication:** `Public` with optional user authentication
+
+Returns public-safe positions in one event for up to 50 users. Users without positions in the event are omitted. The backend reads at most 10,000 matching position rows across the request and does not include a truncation marker.
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Event UUID. |
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `users` | string | Yes | A single comma-separated list of 1 to 50 user UUIDs. Duplicate IDs are removed. Repeated or structured query values are rejected. |
+
+Response type: `EventUserPositions[]`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `userId` | UUID string | Yes | Markets user UUID. |
+| `positions` | `EventUserPosition[]` | Yes | Positions sorted by current value descending. |
+
+`EventUserPosition`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market_uuid` | UUID string | Yes | Market UUID. |
+| `tokenId` | string | Yes | Held outcome token ID. |
+| `amount` | string | Yes | Outcome tokens held in display units. |
+| `current` | string | Yes | Current mark-to-market value. |
+| `outcome` | string | No | Outcome label. |
+| `outcomeIndex` | integer | No | Outcome index, `0` or `1`. |
+| `title` | string | No | Market title. |
+| `displayName` | string or null | Yes | Optional market presentation label. Use `title` when this is `null`. |
+| `slug` | string | No | Market slug. |
+| `icon` | string | No | Market icon URL. |
+| `status` | enum string | No | Current market status. |
+| `conditionId` | string | No | Conditional Tokens condition ID. |
+| `resolvedTo` | string or number | No | Resolution outcome. |
 
 ## Event
 
@@ -172,6 +220,12 @@ Response type: `number`.
 | `proposedPrice` | string or null | No | Current UMA proposed value. |
 | `resolution` | object | No | Resolution timeline, present when `includeResolution=true`. |
 | `priceTargetConfig` | object | No | Per-market price-target configuration when present. |
+| `displayTimezone` | string or null | Yes | IANA timezone used to render this market's times. Markets without a configured timezone return `null` and should be displayed in UTC. |
+| `reward` | `MarketReward` or null | No | Current-period reward opportunity, present when `includeRewards=true`; `null` when the market has no active or later-today opportunity. |
+
+On `GET /api/v1/events/{id_or_slug}`, a started `CLOSE_PRICE` market using the `PYTH` price source can have an empty stored target derived from the live price feed at read time. The event-list endpoint does not perform this live derivation. If the source price is unavailable, the target remains `null`. When the derived market is also the market selected for the event's compatibility metadata, the value can populate `metadata.cryptoPairTargetPrice`.
+
+`MarketReward` uses the same current-period shape documented in [Rewards](/api-reference/rewards#list-reward-markets), including `rewardStatus`, accrual-window fields and boost information.
 
 ## Tag
 

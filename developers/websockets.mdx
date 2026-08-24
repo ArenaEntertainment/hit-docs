@@ -363,6 +363,7 @@ Public events:
 | `crypto-price` | Server to client | Live crypto price tick |
 | `crypto-price-error` | Server to client | Per-symbol subscription error |
 | `global-trade` | Server to client | Automatic site-wide confirmed trade update |
+| `event-trade` | Server to client | Confirmed trade for an event joined with `event-connect` |
 | `live-volume` | Server to client | Automatic absolute market and event volume update |
 | `event-connect` | Client to server | Event UUID |
 | `event-disconnect` | Client to server | Event UUID |
@@ -385,5 +386,5 @@ User events:
 | `collateral-balance` | Server to client | Proxy wallet collateral balance |
 | `collateral-balance-eoa` | Server to client | EOA collateral balance |
 | `transaction` | Server to client | Transaction update |
-| `user-mp-claim-update` | Server to client | Rewards claim dispatch notification; the legacy event name remains live |
+| `user-reward-claim-update` | Server to client | Rewards claim dispatch notification |
 | `order-speed-bump-pending` | Server to client | Order delayed before matching |

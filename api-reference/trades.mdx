@@ -1,0 +1,106 @@
+---
+title: Trades
+description: Raw trades and enriched public trade activity endpoint reference
+---
+
+## List Trades
+
+```text
+GET /api/v1/trades
+```
+
+**Authentication:** `Public`
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | No | Trade UUID. |
+| `market` | UUID string | No | Market UUID. |
+| `taker` | address string | No | Taker wallet address. |
+| `maker` | address string | No | Maker wallet address. |
+| `user` | address string | No | Match trades where this wallet is maker or taker. Overrides `maker` and `taker`. |
+| `limit` | integer | No | Maximum rows. Default `100`, maximum `500`. |
+| `before` | integer | No | Return trades matched before this Unix timestamp. |
+| `after` | integer | No | Return trades matched after this Unix timestamp. |
+| `beforeId` | UUID string | No | Stable tie-break cursor to send with `before`. |
+
+Response type: `TradesListResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | `Trade[]` | Yes | Matching trades. |
+| `hasMore` | boolean | Yes | Whether additional trades are available. |
+
+`Trade`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Trade UUID. |
+| `market` | UUID string | Yes | Market UUID. |
+| `tokenId` | string | Yes | Traded outcome token ID. |
+| `price` | string or null | Yes | Trade price from the taker fill. |
+| `size` | string or null | Yes | Trade size from the taker fill. |
+| `side` | integer | Yes | `0` buy, `1` sell. |
+| `status` | enum string | Yes | `MATCHED`, `MINED`, `CONFIRMED` or `FAILED`. |
+| `txHash` | string or null | Yes | Transaction hash once mined. |
+| `taker` | address string or null | Yes | Taker proxy wallet. |
+| `maker` | address string or null | Yes | Maker proxy wallet. |
+| `matchedAt` | integer | Yes | Match time as a Unix timestamp. |
+| `confirmedAt` | integer or null | Yes | Confirmation time as a Unix timestamp. |
+
+## Get Public Trade Activity
+
+```text
+GET /api/v1/trades/activity
+```
+
+**Authentication:** `Public`
+
+Returns confirmed trades enriched with public trader, market and event information. The corresponding live WebSocket payload is documented under [WebSocket Reference](/api-reference/websockets#public-server-events).
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `limit` | integer | No | Maximum rows. Default `50`, maximum `100`. |
+| `before` | integer | No | Epoch microseconds; return trades before this time for scrollback. Mutually exclusive with `after`. |
+| `after` | integer | No | Epoch microseconds; return trades after this time for catch-up. Mutually exclusive with `before`. |
+| `beforeId` | UUID string | No | Stable tie-break cursor. Requires `before`. |
+| `eventId` | UUID string | No | Restrict results to every market in one event. |
+| `minAmount` | number | No | Raise the minimum USD notional for this request. It cannot lower the platform floor. |
+
+For the next scrollback page, pass the final row's `matchedAt` and `id` back as `before` and `beforeId`.
+
+Response type: `TradeActivityResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | `TradeActivity[]` | Yes | Enriched trades, newest first. |
+| `hasMore` | boolean | Yes | Whether more rows exist beyond this page. |
+
+`TradeActivity`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | UUID string | Yes | Trade UUID. |
+| `matchedAt` | integer | Yes | Match time in epoch microseconds. |
+| `confirmedAt` | integer or null | Yes | Confirmation time in epoch microseconds. |
+| `userId` | UUID string | Yes | Public trader user ID. |
+| `displayName` | string or null | Yes | Trader display name. |
+| `avatarUrl` | string or null | Yes | Trader avatar URL. |
+| `anonymous` | boolean | No | `true` when the trader has enabled anonymous mode. In that case `displayName` is the fixed `Anonymous` label. Omitted otherwise. |
+| `side` | enum string | Yes | Human-readable trade direction: `bought` or `sold`. |
+| `sideRaw` | integer | Yes | `0` buy, `1` sell. |
+| `outcome` | enum string or null | Yes | `Hit` or `Miss` when resolvable. |
+| `notionalUsd` | number | Yes | Trade notional rounded to cents. |
+| `price` | string | Yes | Price from `0` to `1`, formatted to 6 decimal places. |
+| `size` | string | Yes | Outcome-token size, formatted to 6 decimal places. |
+| `tokenId` | string | Yes | Traded outcome token ID. |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `marketName` | string or null | Yes | Market name. |
+| `marketDisplayName` | string or null | Yes | Optional market presentation label. Use `marketName` when this is `null`. |
+| `eventId` | UUID string or null | Yes | Parent event UUID. |
+| `eventSlug` | string or null | Yes | Parent event slug. |
+| `eventName` | string or null | Yes | Parent event name. |
+| `isMultiMarket` | boolean | Yes | Whether the parent event contains multiple markets. |
