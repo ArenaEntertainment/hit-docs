@@ -22,7 +22,7 @@ Query parameters:
 | `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
 
-Response type: `Order[]`.
+Response type: `OrderWithMarket[]`.
 
 When `status` is omitted, the endpoint returns all non-cancelled statuses. Passing `status=CANCELLED` returns `400`.
 
@@ -60,7 +60,7 @@ Response type: `OrderPagination`.
 | `limit` | integer | Yes | Results per page. |
 | `total` | integer or null | Yes | Bounded total when `total=true`; otherwise `null`. |
 | `totalCapped` | boolean | No | Whether `total` reached the server-side cap. |
-| `data` | `Order[]` | Yes | Orders on this page. |
+| `data` | `OrderWithMarket[]` | Yes | Orders on this page. |
 | `hasMore` | boolean | Yes | Whether another cursor page exists. |
 | `nextCursor` | string or null | Yes | Opaque cursor for the next page. |
 
@@ -78,7 +78,7 @@ Path parameters:
 | --- | --- | --- | --- |
 | `id` | UUID string | Yes | Order UUID. |
 
-Response type: `Order`.
+Response type: `OrderWithMarket`.
 
 ## Create Order
 
@@ -286,7 +286,8 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 | `hash` | string | Yes | Order hash. |
 | `priceUint` | string | Yes | Integer price representation. |
 | `metadata` | object | No | Additional order metadata. |
-| `marketInfo` | `OrderMarketInfo` | No | Market and parent-event context returned by order-list endpoints. |
+
+`OrderWithMarket` contains every `Order` field plus required `marketInfo: OrderMarketInfo`. `GET /orders`, `GET /orders/paginated` and `GET /orders/{id}` return this enriched shape. Order values returned by create-order, cancel-order and cancel-market endpoints use the plain `Order` shape. Batch and cancel-all responses use the wrapper types documented above.
 
 `OrderMarketInfo`:
 
@@ -300,6 +301,7 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 | `eventName` | string | No | Parent event name. |
 | `eventIcon` | string | No | Parent event icon URL. |
 | `isMultiMarket` | boolean | Yes | Whether the parent event contains multiple markets. |
+| `isSeriesLayout` | boolean | Yes | Whether the parent event uses the daily-series layout. |
 
 ## OrderbookEvent
 

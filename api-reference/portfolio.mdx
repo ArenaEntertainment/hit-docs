@@ -213,10 +213,12 @@ Response type: `BatchMergeResponse`.
 | `icon` | string | No | Market icon URL. |
 | `slug` | string | No | Market slug. |
 | `title` | string | No | Market title. |
+| `displayName` | string or null | Yes | Optional market presentation label. Use `title` when this is `null`. |
 | `eventId` | UUID string | No | Parent event UUID. |
 | `eventName` | string | No | Parent event name. |
 | `eventIcon` | string | No | Parent event icon URL. |
 | `isMultiMarket` | boolean | No | Whether the position belongs to a multi-market event. |
+| `isSeriesLayout` | boolean | No | Whether the parent event uses the daily-series layout. |
 | `status` | enum string | No | `DRAFT`, `ACTIVE` or `RESOLVED`. |
 | `conditionId` | string | No | Conditional Tokens condition ID. |
 | `resolvedTo` | string or number | No | Resolution outcome. |
@@ -238,6 +240,7 @@ Response type: `BatchMergeResponse`.
 | --- | --- | --- | --- |
 | `id` | UUID string | Yes | Activity row UUID. |
 | `name` | string | Yes | Market or event name. |
+| `displayName` | string or null | Yes | Optional market presentation label. Use `name` when this is `null`. |
 | `slug` | string | Yes | Event slug. |
 | `description` | string | Yes | Event description. |
 | `createdAt` | string (date-time) | Yes | Event creation timestamp. |

@@ -95,7 +95,7 @@ GET /api/v1/events/{id}/positions
 
 **Authentication:** `Public` with optional user authentication
 
-Returns public-safe positions in one event for up to 50 users. Users without positions in the event are omitted.
+Returns public-safe positions in one event for up to 50 users. Users without positions in the event are omitted. The backend reads at most 10,000 matching position rows across the request and does not include a truncation marker.
 
 Path parameters:
 
@@ -127,6 +127,7 @@ Response type: `EventUserPositions[]`.
 | `outcome` | string | No | Outcome label. |
 | `outcomeIndex` | integer | No | Outcome index, `0` or `1`. |
 | `title` | string | No | Market title. |
+| `displayName` | string or null | Yes | Optional market presentation label. Use `title` when this is `null`. |
 | `slug` | string | No | Market slug. |
 | `icon` | string | No | Market icon URL. |
 | `status` | enum string | No | Current market status. |

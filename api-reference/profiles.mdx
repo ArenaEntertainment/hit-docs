@@ -3,7 +3,7 @@ title: Public Profiles
 description: Public profile summary, profit and loss, position and activity endpoint reference
 ---
 
-Public profile endpoints resolve a user by public display name. They do not expose the user's full wallet address. An unknown user, or a user without a usable profile wallet, returns `404`.
+Public profile endpoints resolve a user by public display name. They do not expose the user's full wallet address. An unknown user, a user without a usable profile wallet, or a user who has enabled anonymous mode returns `404`.
 
 ## Get Profile Summary
 
@@ -23,9 +23,9 @@ Response type: `PublicProfileSummary`.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `positionsValue` | string | Yes | Current total value of open positions in USD. |
+| `positionsValue` | string | Yes | Current total position value in USD, including resolved positions with an unredeemed balance. |
 | `biggestWin` | string | Yes | Largest realized win in USD. |
-| `predictions` | integer | Yes | Number of predictions or trades placed. |
+| `predictions` | integer | Yes | Number of distinct confirmed BUY orders. SELL orders are excluded, and multiple fills from one order count once. |
 | `rewardsUsd` | string | Yes | Rewards earned in USDC. |
 | `rewardsCount` | integer | Yes | Number of rewards earned. |
 | `allTimePnl` | string | Yes | Signed all-time profit or loss in USD. |
@@ -82,9 +82,11 @@ Query parameters:
 
 Response type: `ActiveProfilePosition[]` when `status=active`, otherwise `ClosedProfilePosition[]`.
 
-The endpoint is not paginated and returns at most 1,000 positions for the requested status. Closed positions are returned newest first.
+The endpoint is not paginated and returns at most 1,000 positions for the requested status. Positions are ordered by latest price descending.
 
-Both position types include `id`, `market`, optional `eventName`, `isMultiMarket`, optional `image` and `slug`, `side` (`HIT` or `MISS`), numeric-cent entry price `avg`, and USD-string `bet`.
+Both position types include `id`, `market`, optional `eventName`, `isMultiMarket`, `isSeriesLayout`, optional `image`, `eventImage` and `slug`, `side` (`HIT` or `MISS`), numeric-cent entry price `avg`, and USD-string `bet`.
+
+`isSeriesLayout` is `true` for a child of a daily-series event. Use it to distinguish series children from children of a multi-outcome event. `eventImage` contains the parent event artwork when available.
 
 `ActiveProfilePosition` additionally includes numeric `shares`, numeric-cent `now`, USD-string `value`, and numeric `changePct`.
 
@@ -117,6 +119,7 @@ The endpoint is not paginated and returns the newest 100 trade-activity rows.
 | `eventName` | string | No | Parent event name. |
 | `isMultiMarket` | boolean | Yes | Whether the market belongs to a multi-market event. |
 | `image` | string | No | Market image URL. |
+| `eventImage` | string | No | Parent event image URL. |
 | `slug` | string | No | Market slug. |
 | `amount` | string | Yes | USD amount. |
 | `price` | number | Yes | Price in cents. |

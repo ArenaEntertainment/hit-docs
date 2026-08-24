@@ -78,9 +78,10 @@ Response type: `MarketHolders`.
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `userId` | UUID string | Yes | Hit user ID. |
-| `name` | string or null | Yes | Public display name. |
+| `name` | string or null | Yes | Public display name. When `anonymous=true`, this is the fixed `Anonymous` label. |
+| `anonymous` | boolean | No | `true` when the holder has enabled anonymous mode. Omitted otherwise. |
 | `avatarUrl` | string or null | Yes | Public avatar URL. |
-| `walletShort` | string or null | Yes | Shortened wallet fallback when `name` is `null`. |
+| `walletShort` | string or null | Yes | Shortened wallet fallback when `name` is `null`; always `null` when `anonymous=true`. |
 | `shares` | number | Yes | Outcome tokens held in display units. |
 | `rank` | integer | Yes | One-based rank within this outcome. |
 

@@ -244,7 +244,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 
 `CryptoPriceError` contains the affected `symbol` and `reason: "subscribe_failed"`.
 
-`GlobalTrade` contains `id`, microsecond `matchedAt` and nullable `confirmedAt`, trader display fields, `side`, `sideRaw`, nullable `outcome`, `notionalUsd`, `price`, `size`, `tokenId`, market fields, event fields, and `isMultiMarket`.
+`GlobalTrade` uses the [`TradeActivity`](/api-reference/trades#get-public-trade-activity) shape, including `anonymous` and `marketDisplayName`.
 
 `event-trade` uses the same payload as `global-trade`, but is emitted only to the room for the trade's parent event. Send `event-connect` with that event UUID to receive it.
 

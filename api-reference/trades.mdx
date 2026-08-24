@@ -89,6 +89,7 @@ Response type: `TradeActivityResponse`.
 | `userId` | UUID string | Yes | Public trader user ID. |
 | `displayName` | string or null | Yes | Trader display name. |
 | `avatarUrl` | string or null | Yes | Trader avatar URL. |
+| `anonymous` | boolean | No | `true` when the trader has enabled anonymous mode. In that case `displayName` is the fixed `Anonymous` label. Omitted otherwise. |
 | `side` | enum string | Yes | Human-readable trade direction: `bought` or `sold`. |
 | `sideRaw` | integer | Yes | `0` buy, `1` sell. |
 | `outcome` | enum string or null | Yes | `Hit` or `Miss` when resolvable. |
@@ -98,6 +99,7 @@ Response type: `TradeActivityResponse`.
 | `tokenId` | string | Yes | Traded outcome token ID. |
 | `marketId` | UUID string | Yes | Market UUID. |
 | `marketName` | string or null | Yes | Market name. |
+| `marketDisplayName` | string or null | Yes | Optional market presentation label. Use `marketName` when this is `null`. |
 | `eventId` | UUID string or null | Yes | Parent event UUID. |
 | `eventSlug` | string or null | Yes | Parent event slug. |
 | `eventName` | string or null | Yes | Parent event name. |
