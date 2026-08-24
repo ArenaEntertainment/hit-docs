@@ -35,6 +35,55 @@ Path parameters:
 
 Response type: `Market`.
 
+## Get Top Holders
+
+```text
+GET /api/v1/markets/{id_or_slug}/holders
+```
+
+**Authentication:** `Public` with optional user authentication
+
+Returns the largest holders of both outcome tokens. Full wallet addresses are never returned.
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id_or_slug` | UUID string or string | Yes | Market UUID or slug. |
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `limit` | integer | No | Maximum holders returned per outcome. Default `12`, range `1` to `100`. |
+
+Response type: `MarketHolders`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `outcome1` | `MarketHoldersOutcome` | Yes | Holders of the first outcome token. |
+| `outcome2` | `MarketHoldersOutcome` | Yes | Holders of the second outcome token. |
+
+`MarketHoldersOutcome`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `label` | string | Yes | Outcome label from the market. |
+| `tokenId` | string or null | Yes | Outcome token ID; `null` before the market is initialized. |
+| `holders` | `MarketHolder[]` | Yes | Holders ranked by shares descending. |
+
+`MarketHolder`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `userId` | UUID string | Yes | Hit user ID. |
+| `name` | string or null | Yes | Public display name. |
+| `avatarUrl` | string or null | Yes | Public avatar URL. |
+| `walletShort` | string or null | Yes | Shortened wallet fallback when `name` is `null`. |
+| `shares` | number | Yes | Outcome tokens held in display units. |
+| `rank` | integer | Yes | One-based rank within this outcome. |
+
 ## Get Market Volume
 
 ```text
@@ -156,6 +205,7 @@ Response type: `Pagination<Activity>`.
 | `tradeVolumeUsd24h` | string | No | 24-hour trade volume in USD. |
 | `proposedAt` | string (date-time) or null | No | Current proposal timestamp. |
 | `proposedPrice` | string or null | No | Current UMA proposed value. |
+| `displayTimezone` | string or null | Yes | IANA timezone used to render this market's times. Markets without a configured timezone return `null` and should be displayed in UTC. |
 
 ## Activity
 

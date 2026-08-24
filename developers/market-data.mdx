@@ -25,6 +25,7 @@ Common filters:
 | `minLiquidity`, `maxLiquidity` | Filter by USD liquidity |
 | `includeVolume` | Include `tradeVolumeUsd` and `tradeVolumeUsd24h` |
 | `includeResolution` | Include the market resolution timeline |
+| `includeRewards` | Include current-period reward opportunities as `market.reward` |
 | `tag` | Tag UUID; combines with `category` when both are supplied |
 | `sortBy` | `id`, `name`, `startDate`, `endDate`, `tradeVolumeUsd`, `tradeVolumeUsd24h`, `createdAt`, `eventStatus`, `slug` or `liquidity` |
 | `order` | `ASC` or `DESC` |
@@ -135,9 +136,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | `GET /events/{id_or_slug}?includeVolume=true` | Event plus volume fields |
 | `GET /events/{id_or_slug}?includeResolution=true` | Event plus each market's resolution timeline |
 | `GET /events/{id_or_slug}/volume` | Total USD event volume |
+| `GET /events/{id}/positions?users=USER_ID_1,USER_ID_2` | Public-safe positions in one event for up to 50 users |
 | `GET /markets?ids=id1,id2,id3` | Markets by UUID |
 | `GET /markets/{id_or_slug}` | Single market |
+| `GET /markets/{id_or_slug}/holders` | Top holders for both outcome tokens |
 | `GET /markets/{marketId}/volume` | Market volume |
+
+Use `includeRewards=true` on the event list when you need reward amount, `ACCRUING` or `SCHEDULED` status, accrual-window bounds, and current-period boost information inline with each market.
 
 ## Order Book
 

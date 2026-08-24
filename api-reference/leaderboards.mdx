@@ -1,0 +1,56 @@
+---
+title: Leaderboards
+description: Combined public profit, volume and liquidity-rewards leaderboard endpoint reference
+---
+
+## Get Combined Leaderboard
+
+```text
+GET /api/v1/leaderboards
+```
+
+**Authentication:** `Public` with optional user authentication
+
+Returns a combined leaderboard in which every row includes realized P/L, trading volume and liquidity-rewards earnings. `metric` selects the value used to rank the board; it does not remove the other values.
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `metric` | enum string | No | Ranking metric: `pnl`, `volume` or `liquidity-rewards`. Default `pnl`. |
+| `direction` | enum string | No | Page order: `desc` for best first or `asc` for lowest first. Default `desc`. This does not change global rank values. |
+| `window` | enum string | No | `today`, `yesterday`, `week`, `month` or `all`. Default `today`. Windows use UTC calendar-day boundaries. |
+| `category` | UUID string | No | Restrict the board to one category. |
+| `search` | string | No | Case-insensitive partial display-name match. Maximum 100 characters. |
+| `page` | integer | No | Page number. Default `1`. |
+| `limit` | integer | No | Rows per page. Default `20`, maximum `100`. |
+
+Response type: `LeaderboardResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `first` | integer | Yes | One-based index of the first row, or `0` for an empty page. |
+| `last` | integer | Yes | One-based index of the last row, or `0` for an empty page. |
+| `limit` | integer | Yes | Requested page size. |
+| `total` | integer | Yes | Total rows after search and other filters. |
+| `data` | `LeaderboardEntry[]` | Yes | Ranked leaderboard rows. |
+| `metric` | enum string | Yes | Effective ranking metric. |
+| `direction` | enum string | Yes | Effective page-order direction. |
+| `window` | enum string | Yes | Effective time window. |
+| `category` | UUID string | No | Echoed category filter. |
+| `search` | string | No | Echoed search term. |
+| `currentUser` | `LeaderboardEntry` or null | No | Authenticated caller's ranked row when not already on the page; `null` when the caller has no activity. Omitted for anonymous callers and excluded users. Search does not affect this row. |
+
+`LeaderboardEntry`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `rank` | integer | Yes | Global best-first rank for the selected metric. Ties share a rank, and `direction=asc` does not change it. |
+| `userId` | UUID string | Yes | Markets user UUID. |
+| `displayName` | string | No | Public display name. |
+| `avatarUrl` | string | No | Public avatar URL. |
+| `isCurrentUser` | boolean | Yes | Whether this row belongs to the authenticated caller. Always `false` for anonymous requests. |
+| `pnlUsdc` | string | Yes | Signed realized P/L over the window. |
+| `volumeUsdc` | string | Yes | Traded USDC notional over the window. |
+| `liquidityRewardsUsdc` | string | Yes | Liquidity-rewards USDC earned over the window. |
+

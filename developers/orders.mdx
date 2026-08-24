@@ -267,6 +267,7 @@ Use `GET /orders/paginated` for paginated results and cancelled history. Its omi
 | `POST /orders/{id}/cancel` | Cancel one order and return the updated order |
 | `POST /orders/batch-cancel` | Cancel up to 50 order IDs |
 | `POST /orders/cancel` | Cancel all orders in one market |
+| `POST /orders/cancel-event` | Cancel all your orders across every market in one event |
 | `POST /orders/cancel-all` | Cancel all your orders |
 
 Cancel one order:
@@ -288,6 +289,14 @@ Cancel all orders in a market:
 ```typescript
 await request("POST", "/orders/cancel", {
   market: "MARKET_UUID",
+});
+```
+
+Cancel all orders in an event:
+
+```typescript
+await request("POST", "/orders/cancel-event", {
+  eventId: "EVENT_UUID",
 });
 ```
 

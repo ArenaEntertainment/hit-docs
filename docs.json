@@ -105,12 +105,15 @@
             "pages": [
               "api-reference/events",
               "api-reference/markets",
-              "api-reference/prices"
+              "api-reference/prices",
+              "api-reference/profiles",
+              "api-reference/leaderboards"
             ]
           },
           {
             "group": "Trading",
             "pages": [
+              "api-reference/trades",
               "api-reference/orders",
               "api-reference/portfolio",
               "api-reference/rewards"

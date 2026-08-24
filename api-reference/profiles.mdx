@@ -1,0 +1,123 @@
+---
+title: Public Profiles
+description: Public profile summary, profit and loss, position and activity endpoint reference
+---
+
+Public profile endpoints resolve a user by public display name. They do not expose the user's full wallet address. An unknown user, or a user without a usable profile wallet, returns `404`.
+
+## Get Profile Summary
+
+```text
+GET /api/v1/profiles/by-name/{name}/summary
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | Yes | Public display name. |
+
+Response type: `PublicProfileSummary`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `positionsValue` | string | Yes | Current total value of open positions in USD. |
+| `biggestWin` | string | Yes | Largest realized win in USD. |
+| `predictions` | integer | Yes | Number of predictions or trades placed. |
+| `rewardsUsd` | string | Yes | Rewards earned in USDC. |
+| `rewardsCount` | integer | Yes | Number of rewards earned. |
+| `allTimePnl` | string | Yes | Signed all-time profit or loss in USD. |
+
+## Get P/L History
+
+```text
+GET /api/v1/profiles/by-name/{name}/pnl-history
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | Yes | Public display name. |
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `range` | enum string | Yes | `1D`, `1W`, `1M`, `1Y`, `YTD` or `ALL`. |
+
+Response type: `PnlHistory`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `range` | enum string | Yes | Requested range. |
+| `points` | `PnlHistoryPoint[]` | Yes | Time-ordered P/L points. |
+| `value` | string | Yes | Signed endpoint P/L for the range in USD. |
+
+Each `PnlHistoryPoint` contains `time`, a Unix timestamp in seconds, and numeric USD `value`.
+
+## Get Profile Positions
+
+```text
+GET /api/v1/profiles/by-name/{name}/positions
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | Yes | Public display name. |
+
+Query parameters:
+
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `status` | enum string | Yes | `active` or `closed`. |
+
+Response type: `ActiveProfilePosition[]` when `status=active`, otherwise `ClosedProfilePosition[]`.
+
+The endpoint is not paginated and returns at most 1,000 positions for the requested status. Closed positions are returned newest first.
+
+Both position types include `id`, `market`, optional `eventName`, `isMultiMarket`, optional `image` and `slug`, `side` (`HIT` or `MISS`), numeric-cent entry price `avg`, and USD-string `bet`.
+
+`ActiveProfilePosition` additionally includes numeric `shares`, numeric-cent `now`, USD-string `value`, and numeric `changePct`.
+
+`ClosedProfilePosition` additionally includes numeric-cent `exit`, USD-string signed `pnl`, and numeric `pnlPct`.
+
+## Get Profile Activity
+
+```text
+GET /api/v1/profiles/by-name/{name}/activity
+```
+
+**Authentication:** `Public`
+
+Path parameters:
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | Yes | Public display name. |
+
+Response type: `PublicProfileActivity[]`.
+
+The endpoint is not paginated and returns the newest 100 trade-activity rows.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | string | Yes | Activity identifier. |
+| `action` | enum string | Yes | Currently `bought` or `sold`. |
+| `side` | enum string | Yes | `HIT` or `MISS`. |
+| `market` | string | Yes | Market title. |
+| `eventName` | string | No | Parent event name. |
+| `isMultiMarket` | boolean | Yes | Whether the market belongs to a multi-market event. |
+| `image` | string | No | Market image URL. |
+| `slug` | string | No | Market slug. |
+| `amount` | string | Yes | USD amount. |
+| `price` | number | Yes | Price in cents. |
+| `timestamp` | integer | Yes | Unix timestamp in milliseconds. |

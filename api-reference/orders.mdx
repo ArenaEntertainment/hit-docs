@@ -197,6 +197,29 @@ Request body:
 
 Response type: `Order[]`.
 
+## Cancel Event Orders
+
+```text
+POST /api/v1/orders/cancel-event
+```
+
+**Authentication:** `API key HMAC`
+
+Cancels all of your open orders across every market in one event.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | UUID string | Yes | Parent event UUID. |
+
+Response type: `CancelAllOrdersResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `clearedMarkets` | UUID string[] | Yes | Event-market UUIDs with orders successfully cancelled. |
+| `failedMarkets` | UUID string[] | No | Event-market UUIDs that failed cancellation. Retry these. |
+
 ## Cancel All Orders
 
 ```text
@@ -263,6 +286,20 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 | `hash` | string | Yes | Order hash. |
 | `priceUint` | string | Yes | Integer price representation. |
 | `metadata` | object | No | Additional order metadata. |
+| `marketInfo` | `OrderMarketInfo` | No | Market and parent-event context returned by order-list endpoints. |
+
+`OrderMarketInfo`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `icon` | string | Yes | Market icon URL. |
+| `slug` | string | Yes | Market slug. |
+| `title` | string | Yes | Market title. |
+| `outcomeIndex` | integer | Yes | Outcome index associated with the order. |
+| `eventId` | UUID string | No | Parent event UUID. |
+| `eventName` | string | No | Parent event name. |
+| `eventIcon` | string | No | Parent event icon URL. |
+| `isMultiMarket` | boolean | Yes | Whether the parent event contains multiple markets. |
 
 ## OrderbookEvent
 

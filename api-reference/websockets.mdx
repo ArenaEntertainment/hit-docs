@@ -123,6 +123,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `crypto-price-history` | `CryptoPriceHistory` | Initial crypto price history after subscribing. |
 | `crypto-price-error` | `CryptoPriceError` | Per-symbol subscription failure. |
 | `global-trade` | `GlobalTrade` | Site-wide confirmed trade feed. Broadcast automatically. |
+| `event-trade` | `GlobalTrade` | Confirmed trade for an event joined with `event-connect`. |
 | `live-volume` | `LiveVolume` | Coalesced absolute market and event volume updates. Broadcast automatically. |
 
 `PongPayload`:
@@ -245,6 +246,8 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 
 `GlobalTrade` contains `id`, microsecond `matchedAt` and nullable `confirmedAt`, trader display fields, `side`, `sideRaw`, nullable `outcome`, `notionalUsd`, `price`, `size`, `tokenId`, market fields, event fields, and `isMultiMarket`.
 
+`event-trade` uses the same payload as `global-trade`, but is emitted only to the room for the trade's parent event. Send `event-connect` with that event UUID to receive it.
+
 `LiveVolume`:
 
 | Field | Type | Required | Description |
@@ -289,7 +292,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `user-positions-update` | `UserPositionUpdate` | Position update. |
 | `user-order` | `UserOrderEvent[]` | Order update. |
 | `user-trade` | `TradeEvent[]` | Trade update. |
-| `user-mp-claim-update` | `RewardClaimUpdate` | Rewards claim dispatch notification. The legacy event name remains live; raw rewards accrual updates are no longer exposed. |
+| `user-reward-claim-update` | `RewardClaimUpdate` | Rewards claim dispatch notification. |
 | `transaction` | `TransactionUpdate` | Transaction status update. |
 
 `UserAuthenticated`:
@@ -409,7 +412,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `recipientAddress` | address string | No | Claim recipient address. |
 | `claimableMicroUsdc` | string | No | Claimable amount in micro-USDC. |
 | `rowCount` | integer | No | Number of settlement rows included. |
-| `outcome` | enum string | No | `dispatched` or `error`. Missing values should be treated as `dispatched`. |
+| `outcome` | enum string | No | `started`, `dispatched` or `error`. `started` marks the claim as in flight. Missing values should be treated as `dispatched`. |
 | `reason` | string | No | Failure reason, such as `signer-missing`, `executor-failed` or `task-error`. |
 
 `TransactionUpdate`:

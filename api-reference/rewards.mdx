@@ -19,11 +19,12 @@ Response type: `UserRewardsSummary`.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `todayByMarket` | `UserRewardsMarketBreakdown[]` | Yes | Today's per-market rewards. |
+| `todayByMarket` | `UserRewardsMarketBreakdown[]` | Yes | Today's per-market rewards, ordered by represented dollar value descending with `marketId` ascending as the stable tie-break. Active rows use `earnedSoFarUsdc`; pending rows use `estimatedRewardUsdc`. |
 | `earnedSoFarUsdc` | string | Yes | USDC payable if active markets settled now, formatted to 6 decimal places. |
 | `pendingSettlementTotalUsdc` | string | Yes | Estimated USDC from markets awaiting settlement, formatted to 6 decimal places. |
 | `yesterdaySettled` | `YesterdaySettledRewards` | Yes | Yesterday's settled total and per-market rows. |
 | `claimableUsdc` | string | Yes | USDC currently available to claim. |
+| `allTimeEarnedUsdc` | string | Yes | Lifetime USDC earned across all reward periods and markets, formatted to 6 decimal places. |
 | `claimInFlight` | boolean | Yes | Whether a claim dispatch is currently in progress. |
 | `minPayoutUsdc` | string | Yes | Minimum claimable balance required to claim. |
 | `canClaim` | boolean | Yes | Whether the current balance can be claimed now. |
@@ -65,6 +66,8 @@ Response type: `QualifyingOrder[]`.
 | `orderId` | UUID string | Yes | Order UUID. |
 | `marketId` | UUID string | Yes | Market UUID. |
 | `marketName` | string or null | Yes | Market name when available. |
+| `outcome` | string or null | Yes | Human-readable outcome label for the order. |
+| `outcomeIndex` | integer or null | Yes | Outcome index, `0` or `1`, when resolvable. |
 | `side` | enum string | Yes | `BUY` or `SELL`. |
 | `price` | number | Yes | Order price from `0` to `1`. |
 | `sizeUsdc` | string | Yes | Remaining resting USDC notional, formatted to 6 decimal places. |
@@ -108,11 +111,59 @@ GET /api/v1/rewards/markets/pools
 
 **Authentication:** `Public`
 
-Response type: `MarketReward[]`.
+Query parameters:
 
-Each row includes `marketId`, nullable `marketSlug` and `marketName`, nullable `rewardUsdc`, `enabled`, `accruingNow`, nullable `rewardStartAt` and `rewardEndAt`, `maxDistanceFromMid`, `extremeMaxDistanceFromMid`, and `minOrderSizeUsdc`.
+| Query | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page` | integer | No | Event page number. Default `1`. |
+| `limit` | integer | No | Events per page. Default `20`, maximum `50`; larger values are clamped. |
+| `search` | string | No | Case-insensitive match against an event name or qualifying child-market name. |
 
-`rewardUsdc` is the fixed reward committed for the current reward period. It is `null` until a committed reward exists. Use `accruingNow`, not market lifecycle status, to determine whether qualifying orders are currently earning rewards.
+Response type: `PublicRewardsMarketPoolPage`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `first` | integer | Yes | One-based index of the first event group on a non-empty page; otherwise the page offset. |
+| `last` | integer | Yes | One-based index of the last event group on a non-empty page; otherwise the page offset. |
+| `limit` | integer | Yes | Effective events-per-page limit. |
+| `total` | integer | Yes | Total matching event groups. |
+| `totalRewardUsdc` | string | Yes | Current UTC period's committed reward across all qualifying markets, independent of the current page. |
+| `data` | `PublicRewardsEventGroup[]` | Yes | Event-grouped reward opportunities. |
+
+Pagination is over events. A multi-market event and all of its qualifying child markets always stay together on one page.
+
+`PublicRewardsEventGroup`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | UUID string or null | Yes | Parent event UUID. |
+| `eventName` | string or null | Yes | Parent event name. |
+| `eventSlug` | string or null | Yes | Parent event slug. |
+| `isMultiMarket` | boolean | Yes | Whether the event contains multiple markets. |
+| `markets` | `MarketReward[]` | Yes | All qualifying reward markets in this event. |
+
+Only active markets with a strictly positive, committed and enabled reward for the current UTC period are returned. The reward window must be open now or scheduled to open later in the same period. Ended, disabled, zero-value, next-period-only and globally paused opportunities are omitted.
+
+`MarketReward`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | UUID string | Yes | Market UUID. |
+| `marketSlug` | string or null | Yes | Market slug when available. |
+| `marketName` | string or null | Yes | Market name when available. |
+| `rewardUsdc` | string or null | Yes | Fixed USDC reward committed for the current UTC period. |
+| `rewardStatus` | enum string | Yes | `ACCRUING` when earning now or `SCHEDULED` when opening later in the current UTC period. |
+| `accruingNow` | boolean | Yes | Whether qualifying orders are earning rewards now. Equivalent to `rewardStatus === "ACCRUING"`. |
+| `rewardStartAt` | string (date-time) or null | Yes | Reward-window start, or `null` when unbounded. |
+| `rewardEndAt` | string (date-time) or null | Yes | Reward-window end, or `null` when unbounded. |
+| `maxDistanceFromMid` | string | Yes | Normal-market qualifying distance from the midpoint. |
+| `extremeMaxDistanceFromMid` | string | Yes | Qualifying distance at extreme probabilities. |
+| `minOrderSizeUsdc` | string | Yes | Minimum remaining USDC notional required to qualify. |
+| `boostWindows` | `RewardBoostWindow[]` | Yes | Frozen boost windows for the current reward period. |
+| `activeBoostWindow` | `RewardBoostWindow` or null | Yes | Boost window active now, if any. |
+| `currentBoostMultiplier` | string | Yes | Multiplier active now; `"1"` when no boost applies. |
+
+`RewardBoostWindow` contains ISO-8601 `startAt` and `endAt` values and a decimal-string `multiplier`. Window bounds are half-open: the boost applies when `startAt <= now < endAt`.
 
 ## Get Market Reward
 
@@ -130,7 +181,9 @@ Path parameters:
 
 Response type: `MarketRewardDetail`.
 
-Returns the fields from `MarketReward` plus `eventId`, `eventSlug`, `eventName`, `isMultiMarket`, and `isActive`.
+Returns the fields from `MarketReward` plus nullable `eventId`, `eventSlug` and `eventName`, and boolean `isMultiMarket` and `isActive`.
+
+This endpoint returns `404` when the market does not have a genuine current-period opportunity. In particular, next-period-only, ended, disabled, zero-value, globally paused and otherwise inactive reward configurations are not exposed.
 
 ## Get Rewards Leaderboard
 
@@ -148,7 +201,19 @@ Query parameters:
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `20`, maximum `100`. |
 
-Each leaderboard row contains `rank`, `userId`, optional `displayName`, `isCurrentUser`, and `earnedUsdc`. No raw scoring units, reward share, projection, trading P&L or volume values are returned.
+Response type: `RewardsLeaderboardResponse`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `first` | integer | Yes | One-based index of the first row on this page. |
+| `last` | integer | Yes | One-based index of the last row on this page. |
+| `limit` | integer | Yes | Requested page size. |
+| `total` | integer | Yes | Total rows in the filtered leaderboard. |
+| `data` | `RewardsLeaderboardEntry[]` | Yes | Ranked leaderboard rows. |
+| `window` | enum string | Yes | Effective `24h`, `week` or `all` window. |
+| `currentUser` | `RewardsLeaderboardEntry` or null | No | Authenticated caller's full-board row when not already on the page; `null` when the caller has no earnings. Omitted for anonymous callers and excluded users. |
+
+Each `RewardsLeaderboardEntry` contains integer `rank`, `userId`, optional `displayName`, boolean `isCurrentUser`, and string `earnedUsdc`. Ties share a rank. No raw scoring units, reward share, projection, trading P/L or volume values are returned.
 
 ## Claim Rewards
 
@@ -160,7 +225,7 @@ POST /api/v1/rewards/me/claim
 
 Rate limit: 6 requests per minute.
 
-The request has no body. A dispatched claim is asynchronous; poll the returned `pollUrl` or listen for `user-mp-claim-update` on the authenticated WebSocket.
+The request has no body. A dispatched claim is asynchronous; poll the returned `pollUrl` or listen for `user-reward-claim-update` on the authenticated WebSocket.
 
 Response type: `ClaimResponse`.
 
