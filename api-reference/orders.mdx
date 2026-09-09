@@ -135,6 +135,7 @@ Response type: `CreateBatchOrdersResponse`.
 | `index` | integer | Yes | Index of the order in the submitted batch. |
 | `success` | boolean | Yes | Whether that order was created. |
 | `orderId` | UUID string | No | Created order UUID when successful. |
+| `hash` | string | No | EIP-712 hash of the created order when `success` is true, lowercase `0x`-prefixed. The same value the order's WebSocket events and `GET /orders` carry. If you signed the order yourself, compare it with the order you submitted at `index`. |
 | `error` | string | No | Error message when unsuccessful. |
 
 ## Cancel Order
@@ -283,7 +284,7 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 | `amount` | number | Yes | Order size in display units. |
 | `price` | number | Yes | Limit price. |
 | `matchedAmount` | number | Yes | Filled amount in display units. |
-| `hash` | string | Yes | Order hash. |
+| `hash` | string | Yes | EIP-712 order hash, lowercase `0x`-prefixed, 66 characters. If you sign client-side you can compute it before submission from the signed order fields and the exchange's EIP-712 domain; server-signed orders learn it from this response. The same value appears on every WebSocket event that names the order. |
 | `priceUint` | string | Yes | Integer price representation. |
 | `metadata` | object | No | Additional order metadata. |
 

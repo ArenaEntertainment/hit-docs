@@ -350,6 +350,16 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `acquisitionPrice` | number | Yes | Acquisition price. |
 | `timestamp` | string (date-time) | Yes | Update timestamp. |
 
+### Binding events to your orders
+
+Bind an event to your order by its `hash` rather than by matching price and size: two orders with the same shape are indistinguishable that way. If you sign your own orders, you can compute the hash locally before you submit, while `id` is server-minted and only reaches you with the HTTP response — which the first event for that order often precedes.
+
+Three gaps make the hash the only reliable link:
+
+- A maker's fill produces no `user-order` event. Only the taker is notified on a match, so as a maker you learn of your fill from `user-trade` and bind it through `maker_orders[].order_hash`.
+- A fully filled order produces no terminal `user-order` event. Its last event is `user-trade`.
+- Only `GTC` orders produce `user-order` events, apart from a `REJECTION`. The only event naming a `FOK` or `FAK` order is `user-trade`, or a `REJECTION`.
+
 `UserOrderEvent`:
 
 | Field | Type | Required | Description |
@@ -358,6 +368,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `asset_id` | string | Yes | Outcome token ID. |
 | `associate_trades` | string[] or null | Yes | Associated trade IDs. Currently `null`. |
 | `id` | UUID string | Yes | Order UUID. |
+| `hash` | string | Yes | EIP-712 order hash: lowercase `0x`-prefixed, 66 characters. The same value as `Order.hash` in the REST API. If you sign orders yourself you can compute it before submitting and use it to bind this event to your order without waiting for the create response. Not the book-state `hash` on the public order-book events. |
 | `market` | UUID string | Yes | Market UUID. |
 | `order_owner` | UUID string | Yes | Order owner user ID. |
 | `original_size` | string | Yes | Submitted order size. |
@@ -381,6 +392,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `maker_orders` | `TradeMakerOrder[]` | Yes | Maker orders that filled the trade. |
 | `market` | UUID string | Yes | Market UUID. |
 | `match_time` | string | Yes | Match timestamp converted to Unix milliseconds string. |
+| `order_hash` | string | Yes | EIP-712 hash of the order this event is about — the order whose `owner`, `price`, `size` and `side` the event describes. Equals `taker_order_hash` when `trader_side` is `TAKER`, and `maker_orders[0].order_hash` when it is `MAKER`, so you never need to branch on `trader_side` to find your own order. |
 | `outcome` | string | Yes | Outcome label. |
 | `owner` | UUID string | Yes | User ID receiving this event. |
 | `price` | string | Yes | Fill price. |
@@ -389,6 +401,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `size` | string | Yes | Filled size. |
 | `status` | enum string | Yes | `MATCHED`, `MINED`, `CONFIRMED` or `FAILED`. |
 | `taker_order_id` | UUID string | Yes | Taker order UUID. |
+| `taker_order_hash` | string | Yes | EIP-712 hash of the taker order. |
 | `timestamp` | string | Yes | Emit timestamp converted to Unix milliseconds string. |
 | `trade_owner` | UUID string | Yes | Taker owner user ID. |
 | `type` | enum string | Yes | `TRADE`. |
@@ -400,6 +413,7 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `asset_id` | string | Yes | Outcome token ID. |
 | `matched_amount` | string | Yes | Amount matched from this maker order. |
 | `order_id` | UUID string | Yes | Maker order UUID. |
+| `order_hash` | string | Yes | EIP-712 hash of the maker order. |
 | `outcome` | string | Yes | Outcome label. |
 | `owner` | UUID string | Yes | Maker owner user ID. |
 | `price` | string | Yes | Maker fill price. |
