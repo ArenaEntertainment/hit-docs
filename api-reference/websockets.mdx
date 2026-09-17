@@ -9,6 +9,9 @@ Base URL:
 wss://markets.hit.com
 ```
 
+Connect with `transports: ["websocket"]`. The server accepts the websocket transport only, on both
+namespaces, so a client left on the Socket.IO default — which opens with HTTP long-polling — is refused.
+
 For `/user` API key signatures, see [Developer Authentication](/developers/authentication).
 
 ## Namespaces

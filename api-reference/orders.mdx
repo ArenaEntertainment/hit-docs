@@ -19,7 +19,7 @@ Query parameters:
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
 | `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED` or `REJECTED`. `CANCELLED` is rejected; use `/orders/paginated`. |
-| `maker` | address string | No | Maker address. |
+| `maker` | address string | No | Maker address. Matched case-insensitively, so a checksummed address works. |
 | `marketName` | string | No | Case-insensitive partial market name. |
 | `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
@@ -42,7 +42,7 @@ Query parameters:
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
 | `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
-| `maker` | address string | No | Maker address. |
+| `maker` | address string | No | Maker address. Matched case-insensitively, so a checksummed address works. |
 | `marketName` | string | No | Case-insensitive partial market name. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `30`. |
