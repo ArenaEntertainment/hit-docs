@@ -9,6 +9,9 @@ Base URL:
 wss://markets.hit.com
 ```
 
+Connect with `transports: ["websocket"]`. The server accepts the websocket transport only, on both
+namespaces, so a client left on the Socket.IO default — which opens with HTTP long-polling — is refused.
+
 For `/user` API key signatures, see [Developer Authentication](/developers/authentication).
 
 ## Namespaces
@@ -73,6 +76,11 @@ On subscribe, the backend joins one order book room per token ID and requests an
 
 If an initial snapshot cannot be loaded because of a transient backend failure, the server emits `orderbook-error` with the affected `tokenIds`. Unknown token IDs may produce no snapshot and no error.
 
+Two per-socket limits apply to this message, and **both answer with an `orderbook-error` rather than dropping your message silently**:
+
+- **At most 20 `orderbook-market-connect` messages per 10 seconds.** A message over that rate is dropped before it is parsed and answered with `reason: "rate_limited"`, carrying `maxMessages` and `windowMs` and an empty `tokenIds`. Resend it once the window has passed.
+- **At most 500 distinct token subscriptions held at once** (configurable, and the same number as the per-message cap). A message that would take you past it is **rejected in full** and answered with `reason: "subscription_limit_reached"`, carrying `maxTokenIds` and a sample of your token IDs. Token IDs you already hold do not count against it. Send `orderbook-market-disconnect` for books you no longer need, then resend.
+
 ### Unsubscribe from Token Order Books
 
 ```text
@@ -115,13 +123,13 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `app-error` | `AppError` | WebSocket error frame. |
 | `orderbook` | `OrderBook[]` | Order book snapshot. |
 | `orderbook-price-change` | `OrderBookPriceChange` | Price level delta. |
-| `orderbook-error` | `OrderBookError` | Transient snapshot load failure. |
+| `orderbook-error` | `OrderBookError` | Snapshot failure, or a refused subscribe. Branch on `retryable`. |
 | `event-onchain-update` | `EventOnchainUpdatePublic` or `EventOnchainUpdateRaw` | On-chain event or market update. |
 | `tick-size-change` | `TickSizeChange` | Market tick size update. |
 | `order-speed-bump-pending` | `OrderSpeedBumpPending` | Order delayed before matching. |
 | `crypto-price` | `CryptoPrice` | Live crypto price tick. |
 | `crypto-price-history` | `CryptoPriceHistory` | Initial crypto price history after subscribing. |
-| `crypto-price-error` | `CryptoPriceError` | Per-symbol subscription failure. |
+| `crypto-price-error` | `CryptoPriceError` | Subscription failure, or a refused subscribe. Not always per-symbol. |
 | `global-trade` | `GlobalTrade` | Site-wide confirmed trade feed. Broadcast automatically. |
 | `event-trade` | `GlobalTrade` | Confirmed trade for an event joined with `event-connect`. |
 | `live-volume` | `LiveVolume` | Coalesced absolute market and event volume updates. Broadcast automatically. |
@@ -180,9 +188,17 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `tokenIds` | string[] | Yes | Token IDs whose initial snapshot could not be loaded. |
-| `reason` | enum string | Yes | `snapshot_unavailable`. |
-| `retryable` | boolean | Yes | Whether the client should retry. |
+| `tokenIds` | string[] | Yes | The token IDs the frame concerns. Empty when nothing was parsed, and a bounded sample of your request on the two cap refusals. |
+| `reason` | enum string | Yes | One of `snapshot_unavailable`, `too_many_tokens`, `invalid_payload`, `rate_limited` or `subscription_limit_reached`. |
+| `retryable` | boolean | Yes | Whether resending the same message can succeed. |
+| `maxTokenIds` | integer | No | The token limit that applied. Present on `too_many_tokens` and `subscription_limit_reached`. |
+| `distinctCount` | integer | No | Distinct token IDs you sent, after duplicates collapse. Present on `too_many_tokens` when you exceeded the configurable cap. |
+| `receivedCount` | integer | No | Raw element count, before duplicates collapse. Present on `too_many_tokens` when you exceeded the fixed structural ceiling of 10000. Never present alongside `distinctCount`. |
+| `expected` | string | No | What a valid payload looks like. Present on `invalid_payload`. |
+| `maxMessages` | integer | No | Messages allowed per window. Present on `rate_limited`. |
+| `windowMs` | integer | No | Length of that window in milliseconds. Present on `rate_limited`. |
+
+**Branch on `retryable` before `reason`.** `retryable: false` means resending the same message fails identically — change it rather than retry it. `snapshot_unavailable`, `rate_limited` and `subscription_limit_reached` are retryable; `too_many_tokens` and `invalid_payload` are not. Treat an unrecognised `reason` as transient only when `retryable` is `true`.
 
 `EventOnchainUpdatePublic`:
 
@@ -242,7 +258,14 @@ The backend does not emit a dedicated unsubscribe confirmation event.
 | `stale` | boolean | Yes | Whether the source history may no longer be live. |
 | `source` | enum string | No | `BINANCE` or `PYTH`. |
 
-`CryptoPriceError` contains the affected `symbol` and `reason: "subscribe_failed"`.
+`CryptoPriceError` has two shapes, and they do not carry the same fields:
+
+| `reason` | Fields | When |
+| --- | --- | --- |
+| `subscribe_failed` | `symbol`, `reason` | One symbol's subscription failed. No `retryable` on this shape. |
+| `rate_limited` | `reason`, `retryable: true`, `maxMessages`, `windowMs` | Your socket sent more than 20 `crypto-price-connect` messages in 10 seconds. **No `symbol`**, because nothing was parsed. Resend once the window has passed. |
+
+A `crypto-price-connect` whose payload is invalid — not an array, empty, more than 20 symbols, or a symbol longer than 32 characters — is ignored with no frame at all, as is a symbol that is not on the allowlist. Only the rate breach is answered.
 
 `GlobalTrade` uses the [`TradeActivity`](/api-reference/trades#get-public-trade-activity) shape, including `anonymous` and `marketDisplayName`.
 
@@ -358,7 +381,7 @@ Three gaps make the hash the only reliable link:
 
 - A maker's fill produces no `user-order` event. Only the taker is notified on a match, so as a maker you learn of your fill from `user-trade` and bind it through `maker_orders[].order_hash`.
 - A fully filled order produces no terminal `user-order` event. Its last event is `user-trade`.
-- Only `GTC` orders produce `user-order` events, apart from a `REJECTION`. The only event naming a `FOK` or `FAK` order is `user-trade`, or a `REJECTION`.
+- Only `GTC` orders produce `user-order` events, apart from a `REJECTION`. The only event naming a `FOK` or `FAK` order is `user-trade`, or a `REJECTION`. Because a liquidation is now a `CANCELLATION` rather than a `REJECTION`, it no longer takes that exception — so do not rely on a frame arriving for every order the platform removes. Reconcile against `GET /orders` instead.
 
 `UserOrderEvent`:
 
@@ -379,7 +402,16 @@ Three gaps make the hash the only reliable link:
 | `size_matched` | string | Yes | Matched size. |
 | `timestamp` | string | Yes | Order creation timestamp converted to Unix milliseconds string. |
 | `type` | enum string | Yes | `PLACEMENT`, `UPDATE`, `CANCELLATION` or `REJECTION`. |
-| `rejection_reason` | string | No | Present when `type=REJECTION`. Known values include `no_fill_available`, `insufficient_balance`, `stale_nonce` and `onchain_revert:{reason}`. |
+| `rejection_reason` | string | No | Present when `type=REJECTION`. Known values include `no_fill_available`, `stale_nonce` and `onchain_revert:{reason}`. |
+| `cancellation_reason` | string | No | Present when `type=CANCELLATION` **and the platform cancelled the order**, not when you cancelled it. Values written today are `expired` (the order's `expiration` passed) and `insufficient_balance` (your holdings no longer back it). Treat an unrecognised value as a cancel with no stated reason. |
+
+<Warning>
+  **An order removed because your balance no longer backs it is now a `CANCELLATION`, not a `REJECTION`.**
+  It ends `CANCELLED` and carries `cancellation_reason: "insufficient_balance"`, where it previously
+  ended `REJECTED` and carried `rejection_reason: "insufficient_balance"`. If you detect liquidations
+  by watching for `REJECTION` frames, you will stop detecting them. Both shapes can appear while the
+  release is rolling out, so handle each until it completes.
+</Warning>
 
 `TradeEvent`:
 

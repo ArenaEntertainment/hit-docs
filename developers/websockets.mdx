@@ -174,6 +174,14 @@ wss://markets.hit.com
     timestamp + WEBSOCKET + /user
     ```
 
+    <Warning>
+      This handshake accepts only the concatenated message above. The
+      newline-separated message described in
+      [Authentication](/developers/authentication) applies to REST requests
+      only, so signing the handshake that way fails authentication. If you are
+      migrating your REST client to the newline form, leave this one as it is.
+    </Warning>
+
     <Tabs sync={false}>
       <Tab title="TypeScript">
         ```typescript
@@ -344,6 +352,25 @@ wss://markets.hit.com
   </Tab>
 </Tabs>
 
+## Limits
+
+These apply per socket on the public namespace. The two order book limits below answer with an `orderbook-error` rather than dropping your message silently. The frame-size limit is the exception: an oversized message is rejected before any handler sees it, so that one refusal is silent and you can only infer it from books that do not arrive.
+
+| Limit | Value | What you get back |
+| --- | --- | --- |
+| `orderbook-market-connect` messages | 20 per 10 seconds | `orderbook-error` with `reason: "rate_limited"`, `retryable: true`, `maxMessages` and `windowMs` |
+| Distinct token subscriptions held at once | 500 (configurable) | `orderbook-error` with `reason: "subscription_limit_reached"`, `retryable: true` and `maxTokenIds`. The message is rejected in full — nothing is added |
+| Token IDs in one `orderbook-market-connect` | 500 (configurable) | `orderbook-error` with `reason: "too_many_tokens"`, `retryable: false` |
+| `event-connect` messages | 20 per 10 seconds | Nothing. Every `event-connect` breach is dropped silently |
+| Distinct events held at once | 50 | Nothing |
+| `crypto-price-connect` messages | 20 per 10 seconds | `crypto-price-error` with `reason: "rate_limited"`, `retryable: true`, `maxMessages` and `windowMs`, and **no** `symbol` |
+| Symbols in one `crypto-price-connect` | 1 to 20, each at most 32 characters | Nothing. An invalid symbols payload is dropped silently |
+| Frame size | 128 KiB | The message is rejected by the Socket.IO engine before any handler sees it, so no error frame is sent. For `orderbook-market-connect` that is roughly 1,600 token IDs |
+
+Token IDs you already hold do not count against the subscription budget. Send `orderbook-market-disconnect` for books you no longer need before subscribing to a new set.
+
+The `event-connect` and `crypto-price-connect` message counts are separate from each other. `event-disconnect` and `crypto-price-disconnect` are not rate limited.
+
 ## Events
 
 Public events:
@@ -356,12 +383,12 @@ Public events:
 | `orderbook-market-disconnect` | Client to server | Array of token IDs |
 | `orderbook` | Server to client | Order book snapshot |
 | `orderbook-price-change` | Server to client | Price level changes |
-| `orderbook-error` | Server to client | Snapshot or stream error |
+| `orderbook-error` | Server to client | Snapshot failure, or a refused subscribe. Branch on `retryable` |
 | `crypto-price-connect` | Client to server | Array of allowlisted crypto symbols |
 | `crypto-price-disconnect` | Client to server | Array of crypto symbols |
 | `crypto-price-history` | Server to client | Initial price history for a subscribed symbol |
 | `crypto-price` | Server to client | Live crypto price tick |
-| `crypto-price-error` | Server to client | Per-symbol subscription error |
+| `crypto-price-error` | Server to client | Subscription error, or a refused subscribe. Not always per-symbol |
 | `global-trade` | Server to client | Automatic site-wide confirmed trade update |
 | `event-trade` | Server to client | Confirmed trade for an event joined with `event-connect` |
 | `live-volume` | Server to client | Automatic absolute market and event volume update |
@@ -384,7 +411,7 @@ User events:
 | `user-trade` | Server to client | User trade update |
 | `user-positions-update` | Server to client | Position update |
 | `collateral-balance` | Server to client | Proxy wallet collateral balance |
-| `collateral-balance-eoa` | Server to client | EOA collateral balance |
+| `collateral-balance-eoa` | Server to client | **Retired. No longer emitted.** Use `collateral-balance` |
 | `transaction` | Server to client | Transaction update |
 | `user-reward-claim-update` | Server to client | Rewards claim dispatch notification |
 | `order-speed-bump-pending` | Server to client | Order delayed before matching |

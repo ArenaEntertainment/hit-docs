@@ -88,13 +88,13 @@ hit-timestamp: UNIX_TIMESTAMP_MS
 hit-passphrase: API_PASSPHRASE
 ```
 
-The signature message is:
+The signature message joins four parts with newline characters:
 
 ```text
-timestamp + method + path + body
+timestamp + "\n" + method + "\n" + pathWithQuery + "\n" + body
 ```
 
-For REST requests, `path` includes `/api/v1` and excludes the host and query string.
+`pathWithQuery` includes `/api/v1` and the query string exactly as sent, and excludes the host. `body` is the exact string you send, or an empty string when there is no body. The older concatenated message is still accepted; see [Authentication](/developers/authentication) for both forms and for the requests that accept only the older one.
 
 ```typescript
 import { createHmac, randomBytes } from "node:crypto";
@@ -108,12 +108,12 @@ function sign(
   secret: string,
   timestamp: string,
   method: string,
-  path: string,
+  pathWithQuery: string,
   body = "",
 ) {
-  return createHmac("sha256", secret)
-    .update(`${timestamp}${method.toUpperCase()}${path}${body}`)
-    .digest("hex");
+  const message = [timestamp, method.toUpperCase(), pathWithQuery, body].join("\n");
+
+  return createHmac("sha256", secret).update(message).digest("hex");
 }
 
 function units(value: number) {
@@ -181,4 +181,4 @@ socket.on("orderbook", console.log);
 socket.on("orderbook-price-change", console.log);
 ```
 
-User-specific streams require API key authentication after connecting to `/user`. See [WebSockets](/developers/websockets).
+User-specific streams require API key authentication after connecting to `/user`, signed with its own message rather than the REST one. See [WebSockets](/developers/websockets).

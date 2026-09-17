@@ -62,6 +62,50 @@ Some newer endpoints return page-number pagination instead:
 | `totalCapped` | boolean | No | `true` when `total` and `pageCount` are based on the server-side count cap. |
 | `data` | `T[]` | Yes | Page items. |
 
+## Rate Limits
+
+Every route is rate limited unless it explicitly opts out; the health endpoints do. Limits are token
+buckets kept per route and per client.
+
+A **verified trading API key gets its own bucket**, at a higher limit than an unauthenticated caller
+from the same address. Sending the header is not enough — the key has to verify on a route that checks
+it. Requests that fail authentication consume the address's allowance, so repeated rejected requests
+from one address are held near the base limit.
+
+Per-minute limits on the order routes, and what a verified key gets:
+
+| Route | Anonymous | Verified API key |
+| --- | --- | --- |
+| `POST /orders` | 1500 | 15000 |
+| `POST /orders/{id}/cancel` | 1200 | 12000 |
+| `POST /orders/batch`, `POST /orders/batch-cancel`, `POST /orders/cancel`, and the order reads | 400 | 4000 |
+| `POST /orders/cancel-all`, `POST /orders/cancel-event` | 100 | 1000 |
+
+Key management is per hour: creating a key is 5, deactivating one is 10.
+
+On an allowed request you get `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
+
+On a rejected request you get `429` with `X-RateLimit-Limit`, `X-RateLimit-Remaining: 0`, `Retry-After`
+and `X-RateLimit-Reset`, and this body:
+
+```json
+{
+  "statusCode": 429,
+  "message": "ThrottlerException: Too Many Requests",
+  "timestamp": "2026-09-17T16:55:22.000Z",
+  "path": "/api/v1/orders"
+}
+```
+
+<Warning>
+  `X-RateLimit-Reset` does not carry the same quantity on both responses. On a `429` it is the seconds
+  until **one** token frees up, the same value as `Retry-After`. On an allowed request it is the seconds
+  until the bucket is **full** again. Do not read it as one number across both.
+</Warning>
+
+A request whose authentication guard rejects it first, with `401` or `403`, carries no rate-limit
+headers at all.
+
 ## Errors
 
 Errors use standard HTTP status codes with a JSON body when a message is available.

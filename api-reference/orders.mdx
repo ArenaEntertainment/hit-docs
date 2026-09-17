@@ -3,6 +3,8 @@ title: Orders
 description: Order listing, creation and cancellation endpoint reference
 ---
 
+Reads are consistent with your own writes: a create or cancel this API has acknowledged is visible on your next `GET /orders`, `GET /orders/paginated` or `GET /orders/{id}`, so you do not need to poll until it appears or sleep between writing and reading. Those reads wait for the read model to catch up, bounded at 1 second by default. If that bound expires the request is still answered, with what has been written so far, which may be missing your most recent write; re-read rather than re-sending the write. `GET /orders/events` reads a different table and is outside this guarantee.
+
 ## List Orders
 
 ```text
@@ -17,7 +19,7 @@ Query parameters:
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
 | `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED` or `REJECTED`. `CANCELLED` is rejected; use `/orders/paginated`. |
-| `maker` | address string | No | Maker address. |
+| `maker` | address string | No | Maker address. Matched case-insensitively, so a checksummed address works. |
 | `marketName` | string | No | Case-insensitive partial market name. |
 | `sortBy` | enum string | No | `created_at`, `total`, `amount` or `filled`. Default `created_at`. |
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
@@ -40,7 +42,7 @@ Query parameters:
 | --- | --- | --- | --- |
 | `market` | UUID string | No | Market UUID. |
 | `status` | enum string | No | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
-| `maker` | address string | No | Maker address. |
+| `maker` | address string | No | Maker address. Matched case-insensitively, so a checksummed address works. |
 | `marketName` | string | No | Case-insensitive partial market name. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `30`. |
@@ -108,6 +110,8 @@ Request body type: `CreateOrder`.
 
 Response type: `Order`.
 
+This endpoint returns `503` when the order could not be signed, submitted or admitted. Every `503` here means nothing was created, so re-sending the identical body cannot duplicate the order. See [Admission Errors](#admission-errors). An insufficient balance is a `400`, not a `503`, and retrying it will not help.
+
 ## Create Batch Orders
 
 ```text
@@ -136,7 +140,12 @@ Response type: `CreateBatchOrdersResponse`.
 | `success` | boolean | Yes | Whether that order was created. |
 | `orderId` | UUID string | No | Created order UUID when successful. |
 | `hash` | string | No | EIP-712 hash of the created order when `success` is true, lowercase `0x`-prefixed. The same value the order's WebSocket events and `GET /orders` carry. If you signed the order yourself, compare it with the order you submitted at `index`. |
+| `code` | string | No | Machine-readable reason when unsuccessful. |
 | `error` | string | No | Error message when unsuccessful. |
+
+The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted`, `nonce-stale` and `order-archived`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
+
+This route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, in which case no order in the batch was created.
 
 ## Cancel Order
 
@@ -154,6 +163,8 @@ Path parameters:
 
 Response type: `Order`.
 
+Returns `503` with `error: "ORDER_ADMISSION_UNAVAILABLE"` and `errorCode: "engine-busy"` when the venue declined to admit the cancellation. Nothing was cancelled and the identical request can be re-sent. See [Admission Errors](#admission-errors).
+
 ## Cancel Batch Orders
 
 ```text
@@ -166,7 +177,7 @@ Request body:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `orderIds` | UUID string[] | Yes | Order UUIDs to cancel. Minimum `1`, maximum `50`. |
+| `orderIds` | UUID v4 string[] | Yes | Version-4 order UUIDs to cancel. Minimum `1`, maximum `50`. |
 
 Response type: `BatchCancelOrdersResponse`.
 
@@ -181,6 +192,18 @@ Response type: `BatchCancelOrdersResponse`.
 | `orderId` | UUID string | Yes | Order UUID. |
 | `success` | boolean | Yes | Whether the order was cancelled. |
 | `error` | string | No | Error message when unsuccessful. |
+| `code` | string | No | Machine-readable failure class when unsuccessful. Branch on this rather than matching `error`. `not-attempted` means the batch stopped before reaching this order, so it was not touched and re-submitting its cancel is safe. |
+
+A failed reply is returned as its own status rather than collapsed into a `409`:
+
+| Status | Meaning |
+| --- | --- |
+| `500` | The venue answered with an error. |
+| `408` | No reply within 30 seconds. |
+| `503` | The message broker failed. |
+| `409` | Another cancel-shaped batch is already in flight, or the lock service failed after your cancel was already published. In the second case the orders may already be cancelled, so re-read them rather than assuming nothing happened. |
+
+None of these carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing.
 
 ## Cancel Market Orders
 
@@ -197,6 +220,8 @@ Request body:
 | `market` | UUID string | Yes | Market UUID. |
 
 Response type: `Order[]`.
+
+Returns `503` with `error: "ORDER_ADMISSION_UNAVAILABLE"` and `errorCode: "engine-busy"` when the venue declined to admit the cancellation. Nothing was cancelled and the identical request can be re-sent. See [Admission Errors](#admission-errors).
 
 ## Cancel Event Orders
 
@@ -220,6 +245,7 @@ Response type: `CancelAllOrdersResponse`.
 | --- | --- | --- | --- |
 | `clearedMarkets` | UUID string[] | Yes | Event-market UUIDs with orders successfully cancelled. |
 | `failedMarkets` | UUID string[] | No | Event-market UUIDs that failed cancellation. Retry these. |
+| `notAdmitted` | `NotAdmittedMarket[]` | No | Event-markets the venue declined to admit. Present only when at least one market was refused this way. See [Admission Errors](#admission-errors). |
 
 ## Cancel All Orders
 
@@ -235,6 +261,7 @@ Response type: `CancelAllOrdersResponse`.
 | --- | --- | --- | --- |
 | `clearedMarkets` | UUID string[] | Yes | Market UUIDs with orders successfully cancelled. |
 | `failedMarkets` | UUID string[] | No | Market UUIDs that failed cancellation. Retry these. |
+| `notAdmitted` | `NotAdmittedMarket[]` | No | Markets the venue declined to admit. Present only when at least one market was refused this way. See [Admission Errors](#admission-errors). |
 
 ## Get Order Book Events
 
@@ -249,12 +276,54 @@ Query parameters:
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
 | `page` | integer | No | Page number. Default `1`. |
-| `limit` | integer | No | Results per page. Default `30`. |
+| `limit` | integer | No | Results per page. Default `30`, maximum `100`. A larger value is reduced to `100`. |
 | `total` | boolean | No | Include total count. Default `true`. |
 
 Response type: `Pagination<OrderbookEvent>`.
 
 When `total=true`, the count is bounded and the response can include `totalCapped`.
+
+## Admission Errors
+
+`POST /api/v1/orders` answers `503` when the order could not be signed, submitted or admitted. Every `503` on that endpoint means nothing was created, so re-sending the identical body cannot duplicate the order. Each response carries a `Retry-After` header and repeats the same figure in the body as `retryAfterSeconds`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `statusCode` | integer | Yes | `503`. |
+| `error` | enum string | Yes | `SIGNING_UNAVAILABLE` or `ORDER_ADMISSION_UNAVAILABLE`. This is the discriminator; read it before `errorCode`. |
+| `errorCode` | enum string | No | Present only when `error` is `ORDER_ADMISSION_UNAVAILABLE`. |
+| `message` | string | Yes | Error message. |
+| `retryAfterSeconds` | integer | Yes | Seconds to wait before retrying. Repeats the `Retry-After` header. |
+
+`SIGNING_UNAVAILABLE` carries no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before the order could be submitted; the duplicate guard's store being unavailable; and, on `POST /api/v1/orders/batch` only, the locking infrastructure being unavailable. Three of those four — the request budget, the duplicate guard's store, and the batch locking infrastructure — reach orders you signed yourself, so this status is not limited to orders Hit signs for you. Every batch takes its per-account lock whether or not anything in it needs signing.
+
+`ORDER_ADMISSION_UNAVAILABLE` carries an `errorCode`:
+
+| `errorCode` | Meaning |
+| --- | --- |
+| `projection-stale` | The balance projection is not committing. |
+| `balance-unknown` | Your balance has not been read from chain yet. |
+| `balance-unprojected` | You have no projection row. |
+| `collateral-source-unavailable` | The projection could not be queried at all. |
+| `engine-busy` | The venue declined to admit the command at all. |
+| `idempotency-unverifiable` | The venue could not check whether the idempotency key derived from your order had already been used. |
+
+The first four mean your collateral could not be read. `engine-busy` is a stronger statement than the others: the command was not decided, not recorded and not partially applied, because the venue was at one of its own internal bounds. `idempotency-unverifiable` means the duplicate check could not be answered, so the venue refused rather than risk a second live order for one key.
+
+For `engine-busy` and `idempotency-unverifiable`, re-send the identical body and do not change `salt`. The idempotency key is derived from the order's contents, so a new salt is a different order and defeats the deduplication.
+
+None of these values means your order is invalid or your balance is insufficient. A genuinely insufficient balance is a `400`, and retrying it will not help.
+
+`NotAdmittedMarket`, returned in `notAdmitted` by `POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `market` | UUID string | Yes | Market UUID. |
+| `errorCode` | enum string | Yes | Reason the venue declined the market, such as `engine-busy`. |
+| `message` | string | Yes | Error message. |
+| `retryAfterSeconds` | integer | Yes | Seconds to wait before retrying. |
+
+A market listed in `notAdmitted` also appears in `failedMarkets`, so a client that ignores `notAdmitted` behaves exactly as it did before the field existed. Nothing in such a market was cancelled, and other markets in the same request may have been, so re-send rather than assuming either way.
 
 ## Order
 
