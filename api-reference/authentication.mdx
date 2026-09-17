@@ -21,17 +21,22 @@ Include these headers on private REST requests:
 Signature message:
 
 ```text
-timestamp + method + path + body
+timestamp + "\n" + method + "\n" + pathWithQuery + "\n" + body
 ```
 
 Rules:
 
 | Rule | Description |
 | --- | --- |
+| separator | One newline character (`\n`) between each part, with none after `body`. |
 | `method` | Uppercase HTTP method, such as `GET`, `POST` or `DELETE`. |
-| `path` | Full API path including `/api/v1`, excluding scheme, host and query string. |
-| `body` | Exact JSON body string sent on the request, or an empty string for no body. |
+| `pathWithQuery` | Full API path including `/api/v1` and the query string exactly as sent, excluding scheme and host. |
+| `body` | The request body exactly as sent, byte for byte, or an empty string for no body. |
 | timestamp window | Requests must be within 30 seconds of server time. |
+
+The legacy message, `timestamp + method + path + body` concatenated with no separator and with the query string excluded from `path`, is still accepted. See [Developer Authentication](/developers/authentication) for how the two forms differ, a worked example, and the requests that accept only the legacy message.
+
+Every REST request that fails authentication returns `401` with the message `Authentication failed`, whatever the cause.
 
 ## WebSocket Auth Payload
 
@@ -51,6 +56,8 @@ Signature message:
 ```text
 timestamp + WEBSOCKET + /user
 ```
+
+The newline-separated REST message is not accepted for this handshake.
 
 Authentication result event: `user-authenticated`.
 

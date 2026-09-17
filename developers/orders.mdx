@@ -235,6 +235,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
 
+## Retrying a Failed Order
+
+`POST /orders` answers `503` when your order could not be signed, submitted or admitted. Nothing is created when it does, so re-sending the identical body cannot duplicate the order. Every `503` carries a `Retry-After` header and repeats the same figure in the body as `retryAfterSeconds`.
+
+Read `error` before `errorCode`. It is the discriminator, and only one of its two values carries an `errorCode` at all.
+
+`SIGNING_UNAVAILABLE` has no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before your order was submitted; the duplicate guard's store being unavailable; and, on `POST /orders/batch` only, the locking infrastructure being unavailable. Two of those four — the request budget and the duplicate guard's store — reach orders you signed yourself, so do not treat this status as something that only happens to orders Hit signs for you.
+
+`ORDER_ADMISSION_UNAVAILABLE` carries an `errorCode`, one of six values:
+
+| `errorCode` | Meaning |
+| --- | --- |
+| `projection-stale` | The balance projection is not committing. |
+| `balance-unknown` | Your balance has not been read from chain yet. |
+| `balance-unprojected` | You have no projection row. |
+| `collateral-source-unavailable` | The projection could not be queried at all. |
+| `engine-busy` | The venue declined to admit the command at all. |
+| `idempotency-unverifiable` | The venue could not check whether the idempotency key derived from your order had already been used. |
+
+The first four mean your collateral could not be read. `engine-busy` is a stronger statement than the others: the command was not decided, not recorded and not partially applied, because the venue was at one of its own internal bounds. `idempotency-unverifiable` means the duplicate check could not be answered, so the venue refused rather than risk a second live order for one key.
+
+<Warning>
+  When you retry `engine-busy` or `idempotency-unverifiable`, re-send the identical body
+  and do not change `salt`. The idempotency key is derived from the order's contents, so a
+  new salt is a different order and defeats the deduplication these codes exist to protect.
+</Warning>
+
+None of these means your order is invalid or your balance is insufficient. A genuinely insufficient balance is a `400`, and retrying it will not help.
+
+`POST /orders/batch` reports the same six reasons per entry rather than as a `503`. They arrive as that entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. That per-entry `code` set is open-ended: it is whatever the venue supplies for the entry, plus local fallbacks such as `bad-request`, `internal-error`, `not-attempted`, `nonce-stale` and `order-archived`. Do not assume the list is closed, and treat a value you do not recognise the way you treat `internal-error`. The batch route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, and then nothing in the batch was created.
+
 ## List Orders
 
 ```bash
@@ -259,6 +290,8 @@ Filters:
 When `status` is omitted, `GET /orders` returns all non-cancelled statuses. Passing `status=CANCELLED` returns `400`.
 
 Use `GET /orders/paginated` for paginated results and cancelled history. Its omitted-status default is active orders only (`PENDING` and `EXECUTING`). `total` is opt-in and capped; use `cursor`, `hasMore` and `nextCursor` for efficient deep pagination.
+
+Your own writes are already visible to these reads. A create or cancel this API has acknowledged appears on your next `GET /orders`, `GET /orders/paginated` or `GET /orders/{id}`, so you do not need to poll until it shows up or sleep between writing and reading. The read waits for the read model to catch up, bounded at 1 second by default. If that bound expires you still get an answer, built from what has been written so far, which may be missing your most recent write; re-read in that case rather than re-sending the write. `GET /orders/events` reads a different table and is outside this guarantee.
 
 ## Cancel Orders
 
@@ -300,6 +333,22 @@ await request("POST", "/orders/cancel-event", {
 });
 ```
 
+Cancellations fail in different shapes depending on the route:
+
+| Request | Failure to handle |
+| --- | --- |
+| `POST /orders/{id}/cancel`, `POST /orders/cancel` | `503` with `error: "ORDER_ADMISSION_UNAVAILABLE"`, `errorCode: "engine-busy"` and a `Retry-After` header |
+| `POST /orders/batch-cancel` | `500`, `408`, `503` or `409`, each with its own meaning |
+| `POST /orders/cancel-all`, `POST /orders/cancel-event` | A normal `201` whose body may carry `notAdmitted` |
+
+A `503` from `POST /orders/{id}/cancel` or `POST /orders/cancel` means nothing was cancelled, and you can re-send the identical request.
+
+`POST /orders/batch-cancel` takes 1 to 50 version-4 UUIDs. It answers `500` when the venue replied with an error, `408` when no reply arrived within 30 seconds, `503` when the message broker failed, and `409` when another cancel-shaped batch is already in flight. None of the first three carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing.
+
+`POST /orders/cancel-all` and `POST /orders/cancel-event` add an optional `notAdmitted` array to their success body, present only when the venue refused at least one market. Each entry carries `market`, `errorCode`, `message` and `retryAfterSeconds`. A market listed there also appears in `failedMarkets`, so a client that ignores the new field behaves exactly as before. Nothing in such a market was cancelled, and other markets in the same request may have been, so re-send rather than assuming either way.
+
+Full response shapes are in the [Orders API reference](/api-reference/orders).
+
 ## Positions and Activity
 
 These endpoints also accept API key authentication:
@@ -314,4 +363,4 @@ These endpoints also accept API key authentication:
 | `POST /markets/redeem-positions/batch` | Redeem one or more resolved market positions |
 | `GET /markets/mergeable-positions` | Active markets where you hold both outcome legs |
 | `POST /markets/merge-positions/batch` | Merge one or more complete Yes/No sets back into collateral |
-| `GET /orders/events` | Active order book events |
+| `GET /orders/events` | Active order book events across the platform, not scoped to you |

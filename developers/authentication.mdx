@@ -38,15 +38,42 @@ Every authenticated REST request must include:
 The signature message is:
 
 ```text
-timestamp + method + path + body
+timestamp + "\n" + method + "\n" + pathWithQuery + "\n" + body
 ```
 
 Rules:
 
+- The four parts are joined with one newline character (`\n`, byte `0x0A`) between each, and no newline follows `body`. A request without a body therefore ends with the newline that precedes the empty body.
 - `method` is uppercase, such as `GET`, `POST` or `DELETE`.
-- `path` includes `/api/v1` and excludes the scheme, host and query string.
-- `body` is the exact JSON string sent on the request, or an empty string for requests without a body.
+- `pathWithQuery` includes `/api/v1` and the query string exactly as sent, including the `?`, and excludes the scheme and host. With no query string it is just the path.
+- `body` is the request body exactly as sent, byte for byte. Serialize it once into a variable, then sign and send that same string. Signing a separate re-serialization of your object produces a different signature.
 - Timestamps must be within 30 seconds of server time.
+
+### Legacy Signature Message
+
+The original message is still accepted, with no retirement date set, so existing bots keep working unchanged:
+
+```text
+timestamp + method + path + body
+```
+
+It differs from the recommended message in two ways, not one. The parts are concatenated with no separator between them, and the parts themselves are different: `path` excludes the query string, and `body` is a re-serialization of the parsed JSON rather than the bytes you sent. Inserting newlines into a legacy message does not produce a valid recommended-form signature.
+
+For a `GET` request to `/api/v1/markets/user-positions?id=abc&id=def` with timestamp `1699123456789` and no body, the two forms sign:
+
+| Form | Message signed |
+| --- | --- |
+| Recommended | `1699123456789\nGET\n/api/v1/markets/user-positions?id=abc&id=def\n` |
+| Legacy | `1699123456789GET/api/v1/markets/user-positions` |
+
+Each `\n` above is one newline character, not the two characters `\` and `n`.
+
+### Where the Legacy Message Is Required
+
+Two request types accept only the legacy message:
+
+- **File uploads.** A `multipart/form-data` request has no raw body available to the server, so a signature over the bytes you sent cannot match.
+- **The `/user` WebSocket handshake.** WebSocket authentication runs through a different service that builds only the concatenated message. See [WebSocket Auth](#websocket-auth).
 
 ## REST Signing Examples
 
@@ -62,18 +89,20 @@ function signRequest(
   apiSecret: string,
   timestamp: string,
   method: string,
-  path: string,
+  pathWithQuery: string,
   body = "",
 ) {
-  return createHmac("sha256", apiSecret)
-    .update(`${timestamp}${method.toUpperCase()}${path}${body}`)
-    .digest("hex");
+  const message = [timestamp, method.toUpperCase(), pathWithQuery, body].join("\n");
+
+  return createHmac("sha256", apiSecret).update(message).digest("hex");
 }
 
 async function hitRequest(method: string, path: string, body?: JsonBody) {
   const apiHost = "https://hit.com";
+  // Any query string belongs in `path`, because it is part of the signed message.
   const fullPath = `/api/v1${path}`;
   const timestamp = Date.now().toString();
+  // Serialized once, then both signed and sent.
   const bodyText = body ? JSON.stringify(body) : "";
 
   const response = await fetch(`${apiHost}${fullPath}`, {
@@ -119,15 +148,19 @@ import time
 import requests
 
 
-def sign_request(secret: str, timestamp: str, method: str, path: str, body: str = "") -> str:
-    message = f"{timestamp}{method.upper()}{path}{body}"
+def sign_request(
+    secret: str, timestamp: str, method: str, path_with_query: str, body: str = ""
+) -> str:
+    message = "\n".join([timestamp, method.upper(), path_with_query, body])
     return hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
 
 
 def hit_request(method: str, path: str, payload: dict | None = None):
     api_host = "https://hit.com"
+    # Any query string belongs in path, because it is part of the signed message.
     full_path = f"/api/v1{path}"
     timestamp = str(int(time.time() * 1000))
+    # Serialized once, then both signed and sent.
     body = json.dumps(payload, separators=(",", ":")) if payload else ""
 
     response = requests.request(
@@ -156,6 +189,8 @@ def hit_request(method: str, path: str, payload: dict | None = None):
 print(hit_request("GET", "/orders"))
 ```
 
+`json.dumps(payload, separators=(",", ":"))` produces the exact string that `requests` sends as the body, so signing that same `body` variable signs the bytes the server receives.
+
 </Tab>
 
 <Tab title="Rust">
@@ -178,8 +213,20 @@ fn timestamp_ms() -> String {
         .to_string()
 }
 
-fn sign_request(secret: &str, timestamp: &str, method: &str, path: &str, body: &str) -> String {
-    let message = format!("{}{}{}{}", timestamp, method.to_uppercase(), path, body);
+fn sign_request(
+    secret: &str,
+    timestamp: &str,
+    method: &str,
+    path_with_query: &str,
+    body: &str,
+) -> String {
+    let message = format!(
+        "{}\n{}\n{}\n{}",
+        timestamp,
+        method.to_uppercase(),
+        path_with_query,
+        body
+    );
     let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("hmac accepts any key");
     mac.update(message.as_bytes());
     hex::encode(mac.finalize().into_bytes())
@@ -187,6 +234,7 @@ fn sign_request(secret: &str, timestamp: &str, method: &str, path: &str, body: &
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
+    // Any query string belongs in full_path, because it is part of the signed message.
     let full_path = "/api/v1/orders";
     let timestamp = timestamp_ms();
     let signature = sign_request(
@@ -226,6 +274,12 @@ The WebSocket signature message is different from REST:
 timestamp + WEBSOCKET + /user
 ```
 
+<Warning>
+  The newline-separated REST message does not apply here. The handshake is
+  verified by a different service, which builds only the concatenated message
+  above, so signing the newline form fails authentication.
+</Warning>
+
 Payload:
 
 ```json
@@ -240,6 +294,18 @@ Payload:
 ```
 
 The server responds on `user-authenticated` with `{ "success": true }` or `{ "success": false, "error": "..." }`.
+
+## Authentication Failures
+
+Every REST request that fails trading API key authentication returns `401` with the message `Authentication failed`. The response does not say which check failed, so work through the causes in order:
+
+- A required header is missing.
+- The timestamp is outside the 30 second window, usually because the host clock has drifted.
+- The API key is unknown or no longer active.
+- The passphrase does not match the key.
+- The signature matches neither accepted message.
+
+If your client branches on the older, more specific messages such as `Invalid signature` or `Invalid passphrase`, stop: those strings are no longer returned.
 
 ## Security Notes
 

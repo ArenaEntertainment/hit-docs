@@ -15,7 +15,13 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `ids` | string | No | Comma-separated market UUIDs. If omitted, returns an empty array. |
+| `ids` | string | No | Comma-separated market UUIDs. With neither `ids` nor `tag`, returns an empty array. |
+| `tag` | UUID string | No | Return the markets carrying this market tag, positioned markets first by position, then newest first. |
+| `limit` | integer | No | Results returned for a `tag` request. Default `50`, range `1` to `100`; outside that range returns `400`. Ignored when you pass `ids` without `tag`. |
+
+Sending `ids` and `tag` together returns only the named markets that also carry the tag. Sending `ids` blank alongside `tag` is the same request as omitting `ids`.
+
+A `tag` request excludes markets that are in draft, markets flagged hidden, and markets whose parent event is in draft or is protected. An `ids` request applies none of those exclusions.
 
 Response type: `Market[]`.
 
@@ -207,6 +213,7 @@ Response type: `Pagination<Activity>`.
 | `proposedAt` | string (date-time) or null | No | Current proposal timestamp. |
 | `proposedPrice` | string or null | No | Current UMA proposed value. |
 | `displayTimezone` | string or null | Yes | IANA timezone used to render this market's times. Markets without a configured timezone return `null` and should be displayed in UTC. |
+| `tags` | `{ id: UUID string, slug: string, label: string, type: string }[]` | Yes | The market's tags, empty when it has none. Returned by `GET /api/v1/markets` for both `ids` and `tag` requests, and by `GET /api/v1/markets/{id_or_slug}`. |
 
 ## Activity
 
