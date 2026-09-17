@@ -70,7 +70,7 @@ Each `\n` above is one newline character, not the two characters `\` and `n`.
 
 ### Where the Legacy Message Is Required
 
-Two request types accept only the legacy message:
+The recommended message is built from the raw request body the server captured. Where there is no raw body to capture, only the legacy message can match. Two cases matter in practice:
 
 - **File uploads.** A `multipart/form-data` request has no raw body available to the server, so a signature over the bytes you sent cannot match.
 - **The `/user` WebSocket handshake.** WebSocket authentication runs through a different service that builds only the concatenated message. See [WebSocket Auth](#websocket-auth).

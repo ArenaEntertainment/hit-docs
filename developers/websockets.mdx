@@ -365,7 +365,7 @@ These apply per socket on the public namespace. Both order book limits answer wi
 | Distinct events held at once | 50 | Nothing |
 | `crypto-price-connect` messages | 20 per 10 seconds | `crypto-price-error` with `reason: "rate_limited"`, `retryable: true`, `maxMessages` and `windowMs`, and **no** `symbol` |
 | Symbols in one `crypto-price-connect` | 1 to 20, each at most 32 characters | Nothing. An invalid symbols payload is dropped silently |
-| Frame size | 128 KiB | The connection closes with no reply frame. For `orderbook-market-connect` that is roughly 1,600 token IDs |
+| Frame size | 128 KiB | The message is rejected by the Socket.IO engine before any handler sees it, so no error frame is sent. For `orderbook-market-connect` that is roughly 1,600 token IDs |
 
 Token IDs you already hold do not count against the subscription budget. Send `orderbook-market-disconnect` for books you no longer need before subscribing to a new set.
 
