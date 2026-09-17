@@ -201,7 +201,7 @@ A failed reply is returned as its own status rather than collapsed into a `409`:
 | `500` | The venue answered with an error. |
 | `408` | No reply within 30 seconds. |
 | `503` | The message broker failed. |
-| `409` | Another cancel-shaped batch is already in flight. |
+| `409` | Another cancel-shaped batch is already in flight, or the lock service failed after your cancel was already published. In the second case the orders may already be cancelled, so re-read them rather than assuming nothing happened. |
 
 None of these carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing.
 
@@ -295,7 +295,7 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 | `message` | string | Yes | Error message. |
 | `retryAfterSeconds` | integer | Yes | Seconds to wait before retrying. Repeats the `Retry-After` header. |
 
-`SIGNING_UNAVAILABLE` carries no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before the order could be submitted; the duplicate guard's store being unavailable; and, on `POST /api/v1/orders/batch` only, the locking infrastructure being unavailable. Two of those four — the request budget and the duplicate guard's store — reach orders you signed yourself, so this status is not limited to orders Hit signs for you.
+`SIGNING_UNAVAILABLE` carries no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before the order could be submitted; the duplicate guard's store being unavailable; and, on `POST /api/v1/orders/batch` only, the locking infrastructure being unavailable. Three of those four — the request budget, the duplicate guard's store, and the batch locking infrastructure — reach orders you signed yourself, so this status is not limited to orders Hit signs for you. Every batch takes its per-account lock whether or not anything in it needs signing.
 
 `ORDER_ADMISSION_UNAVAILABLE` carries an `errorCode`:
 

@@ -241,7 +241,7 @@ The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
 
 Read `error` before `errorCode`. It is the discriminator, and only one of its two values carries an `errorCode` at all.
 
-`SIGNING_UNAVAILABLE` has no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before your order was submitted; the duplicate guard's store being unavailable; and, on `POST /orders/batch` only, the locking infrastructure being unavailable. Two of those four — the request budget and the duplicate guard's store — reach orders you signed yourself, so do not treat this status as something that only happens to orders Hit signs for you.
+`SIGNING_UNAVAILABLE` has no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before your order was submitted; the duplicate guard's store being unavailable; and, on `POST /orders/batch` only, the locking infrastructure being unavailable. Three of those four — the request budget, the duplicate guard's store, and the batch locking infrastructure — reach orders you signed yourself, so do not treat this status as something that only happens to orders Hit signs for you. Every batch takes its per-account lock whether or not anything in it needs signing.
 
 `ORDER_ADMISSION_UNAVAILABLE` carries an `errorCode`, one of six values:
 
@@ -343,7 +343,7 @@ Cancellations fail in different shapes depending on the route:
 
 A `503` from `POST /orders/{id}/cancel` or `POST /orders/cancel` means nothing was cancelled, and you can re-send the identical request.
 
-`POST /orders/batch-cancel` takes 1 to 50 version-4 UUIDs. It answers `500` when the venue replied with an error, `408` when no reply arrived within 30 seconds, `503` when the message broker failed, and `409` when another cancel-shaped batch is already in flight. None of the first three carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing.
+`POST /orders/batch-cancel` takes 1 to 50 version-4 UUIDs. It answers `500` when the venue replied with an error, `408` when no reply arrived within 30 seconds, `503` when the message broker failed, and `409` when another cancel-shaped batch is already in flight. None of the first three carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing. `409` is usually plain contention, but it is also returned when the lock service fails after your cancel was already published, so re-read on that one too rather than assuming nothing happened.
 
 `POST /orders/cancel-all` and `POST /orders/cancel-event` add an optional `notAdmitted` array to their success body, present only when the venue refused at least one market. Each entry carries `market`, `errorCode`, `message` and `retryAfterSeconds`. A market listed there also appears in `failedMarkets`, so a client that ignores the new field behaves exactly as before. Nothing in such a market was cancelled, and other markets in the same request may have been, so re-send rather than assuming either way.
 

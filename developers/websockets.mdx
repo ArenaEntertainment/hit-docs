@@ -354,7 +354,7 @@ wss://markets.hit.com
 
 ## Limits
 
-These apply per socket on the public namespace. Both order book limits answer with an `orderbook-error` rather than dropping your message silently, so you never have to infer a refusal from books that do not arrive.
+These apply per socket on the public namespace. The two order book limits below answer with an `orderbook-error` rather than dropping your message silently. The frame-size limit is the exception: an oversized message is rejected before any handler sees it, so that one refusal is silent and you can only infer it from books that do not arrive.
 
 | Limit | Value | What you get back |
 | --- | --- | --- |

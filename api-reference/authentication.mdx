@@ -36,7 +36,7 @@ Rules:
 
 The legacy message, `timestamp + method + path + body` concatenated with no separator and with the query string excluded from `path`, is still accepted. See [Developer Authentication](/developers/authentication) for how the two forms differ, a worked example, and the requests that accept only the legacy message.
 
-Every REST request that fails authentication returns `401` with the message `Authentication failed`, whatever the cause.
+Every REST request that fails **trading API key** authentication returns `401` with the message `Authentication failed`, whatever the cause. Routes that also accept a JWT can answer differently when you present one instead: a transport failure while verifying a JWT is a `503`, not this `401`.
 
 ## WebSocket Auth Payload
 
