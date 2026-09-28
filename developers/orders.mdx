@@ -339,15 +339,53 @@ Cancellations fail in different shapes depending on the route:
 | --- | --- |
 | `POST /orders/{id}/cancel`, `POST /orders/cancel` | `503` with `error: "ORDER_ADMISSION_UNAVAILABLE"`, `errorCode: "engine-busy"` and a `Retry-After` header |
 | `POST /orders/batch-cancel` | `500`, `408`, `503` or `409`, each with its own meaning |
-| `POST /orders/cancel-all`, `POST /orders/cancel-event` | A normal `201` whose body may carry `notAdmitted` |
+| `POST /orders/cancel-all`, `POST /orders/cancel-event` | `207` when any order is still resting, `503` with an `outcome`, `409` or `422`, and unsuccessful entries in `results` |
 
 A `503` from `POST /orders/{id}/cancel` or `POST /orders/cancel` means nothing was cancelled, and you can re-send the identical request.
 
 `POST /orders/batch-cancel` takes 1 to 50 version-4 UUIDs. It answers `500` when the venue replied with an error, `408` when no reply arrived within 30 seconds, `503` when the message broker failed, and `409` when another cancel-shaped batch is already in flight. None of the first three carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing. `409` is usually plain contention, but it is also returned when the lock service fails after your cancel was already published, so re-read on that one too rather than assuming nothing happened.
 
-`POST /orders/cancel-all` and `POST /orders/cancel-event` add an optional `notAdmitted` array to their success body, present only when the venue refused at least one market. Each entry carries `market`, `errorCode`, `message` and `retryAfterSeconds`. A market listed there also appears in `failedMarkets`, so a client that ignores the new field behaves exactly as before. Nothing in such a market was cancelled, and other markets in the same request may have been, so re-send rather than assuming either way.
+`POST /orders/cancel-all` and `POST /orders/cancel-event` answer `200` when every order in scope is off the book and `207` when at least one is still resting. Both statuses carry the same body, so test for a 2xx rather than for one status. Read `results`, which has one entry per order the request covered. `success` says whether this request cancelled the order, so an entry can be `false` for an order that was already filled or cancelled. Decide from `code`:
 
-Full response shapes are in the [Orders API reference](/api-reference/orders).
+```typescript
+type CancelResult = { orderId: string; success: boolean; code?: string; error?: string };
+
+const { results } = (await request("POST", "/orders/cancel-all")) as { results: CancelResult[] };
+
+const alreadyGone = ["state-conflict", "not-found"];
+
+for (const entry of results) {
+  if (entry.success || alreadyGone.includes(entry.code ?? "")) {
+    continue; // off the book: nothing of yours is resting
+  }
+  if (entry.code === "unknown") {
+    // The venue cannot say whether this cancel took effect. Read your open orders before re-sending.
+    console.log("check", entry.orderId);
+  } else {
+    // Still resting: not-attempted, engine-busy, or a failure with no code.
+    console.log("resting", entry.orderId);
+  }
+}
+```
+
+The `request` helper above returns only the body, and throws on any status that is not a 2xx. To tell `200` from `207`, read `response.status` in your own helper before parsing the body. If a `207` carries no entry that is still resting, read your open orders before re-sending.
+
+A `503` whose `error` is `ORDER_SERVICE_UNAVAILABLE` carries an `outcome`: `nothing-cancelled` means the request never started and can be re-sent as it is; `unknown` means it may or may not have cancelled, so read your open orders first. That `503` and the `ORDER_ADMISSION_UNAVAILABLE` one described under [Admission Errors](/api-reference/orders#admission-errors) can both still carry `results` for orders the venue reached before the failure.
+
+### Migrating from the market fields
+
+The cancel-all and cancel-event responses currently carry five market-level fields beside `results`: `clearedMarkets`, `failedMarkets`, `notAdmitted`, `markets` and `cancelled`. **These fields are deprecated and will be removed.** `results` is returned today, so move to it now. A client that reads only `results` and the status is unaffected when the fields go.
+
+| If you read | Read instead |
+| --- | --- |
+| `failedMarkets`, to decide what to retry | The entries in `results` that are still resting, as in the example above. Re-send for those, and read your open orders first for any marked `unknown`. |
+| `notAdmitted`, for markets the venue refused | Entries in `results` with `code: "engine-busy"`. They carry no `retryAfterSeconds`. |
+| `clearedMarkets`, `markets` or `cancelled`, to confirm the cancel worked | The status. `200` means every order in scope is off the book. |
+| A `201` status, as success | Any 2xx. These routes answer `200` or `207`, not `201`. |
+
+`results` entries carry no market ID. If you need to know which market an order was in, use your own order records or `GET /orders/{id}`.
+
+Full response shapes are in the [Orders API reference](/api-reference/orders#cancel-sweep-response).
 
 ## Positions and Activity
 

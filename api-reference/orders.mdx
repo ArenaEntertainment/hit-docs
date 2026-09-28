@@ -239,13 +239,7 @@ Request body:
 | --- | --- | --- | --- |
 | `eventId` | UUID string | Yes | Parent event UUID. |
 
-Response type: `CancelAllOrdersResponse`.
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `clearedMarkets` | UUID string[] | Yes | Event-market UUIDs with orders successfully cancelled. |
-| `failedMarkets` | UUID string[] | No | Event-market UUIDs that failed cancellation. Retry these. |
-| `notAdmitted` | `NotAdmittedMarket[]` | No | Event-markets the venue declined to admit. Present only when at least one market was refused this way. See [Admission Errors](#admission-errors). |
+Response type: `CancelSweepResponse`. See [Cancel Sweep Response](#cancel-sweep-response).
 
 ## Cancel All Orders
 
@@ -255,13 +249,57 @@ POST /api/v1/orders/cancel-all
 
 **Authentication:** `API key HMAC`
 
-Response type: `CancelAllOrdersResponse`.
+Response type: `CancelSweepResponse`. See [Cancel Sweep Response](#cancel-sweep-response).
+
+## Cancel Sweep Response
+
+`POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event` return `CancelSweepResponse` with a status of `200` or `207`.
+
+<Warning>
+The five market fields in this response — `clearedMarkets`, `failedMarkets`, `notAdmitted`, `markets` and `cancelled` — are deprecated and will be removed. Read `results`, which is returned today. See [Migrating from the market fields](/developers/orders#migrating-from-the-market-fields).
+</Warning>
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `clearedMarkets` | UUID string[] | Yes | Market UUIDs with orders successfully cancelled. |
-| `failedMarkets` | UUID string[] | No | Market UUIDs that failed cancellation. Retry these. |
-| `notAdmitted` | `NotAdmittedMarket[]` | No | Markets the venue declined to admit. Present only when at least one market was refused this way. See [Admission Errors](#admission-errors). |
+| `results` | `CancelSweepOrderResult[]` | Yes | One entry per order the request covered, across every market. Read this to learn what became of your orders. `[]` when nothing needed cancelling. |
+| `clearedMarkets` | UUID string[] | Yes | **Deprecated.** Market UUIDs whose cancel completed. |
+| `failedMarkets` | UUID string[] | No | **Deprecated.** Market UUIDs whose cancel did not complete. Do not decide what to retry from this field; read `results`. |
+| `notAdmitted` | `NotAdmittedMarket[]` | No | **Deprecated.** Markets the venue declined to admit. See [Admission Errors](#admission-errors). |
+| `markets` | object[] | Yes | **Deprecated.** A summary of each market the request touched. |
+| `cancelled` | integer | Yes | **Deprecated.** Number of orders this request cancelled. |
+
+`CancelSweepOrderResult`:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `orderId` | UUID string | Yes | Order UUID. |
+| `success` | boolean | Yes | Whether this request cancelled the order. `false` does not by itself mean the order is still resting: an order that was already filled or cancelled when the request reached it is also `false`. Read `code`. |
+| `code` | string | No | Machine-readable failure class when `success` is `false`. Branch on this rather than on `error`. |
+| `error` | string | No | Human-readable detail. Do not branch on it. |
+
+For each entry where `success` is `false`, act on `code`:
+
+| `code` | Order still resting | Meaning |
+| --- | --- | --- |
+| `state-conflict` | No | The order was no longer open when the cancel ran. It was filled or cancelled first, or it left the book between Hit reading your orders and the venue reading its own. Look the order up if you need its final status. |
+| `not-found` | No | No such order of yours exists. |
+| `not-attempted` | Yes | Nothing was validated or written for this order. Re-sending is safe. |
+| `engine-busy` | Yes | The venue declined to admit the cancel for this order's market. Re-send. |
+| `unknown` | Possibly | The venue cannot say whether the cancel took effect. Read your open orders before re-sending. |
+| Missing, or any other value | Yes | Treat the order as still resting. |
+
+Entries carry no market ID.
+
+| Status | Body | Meaning |
+| --- | --- | --- |
+| `200` | `CancelSweepResponse` | Every order in scope is off the book, either cancelled by this request or already gone when it arrived. |
+| `207` | `CancelSweepResponse` | At least one order is still resting or may be, which includes a request in which nothing was cancelled. Those orders are the unsuccessful entries whose `code` is not `state-conflict` or `not-found`. If `results` holds none, read your open orders before re-sending. |
+| `409` | Error | You already have a cancel in flight. Nothing was cancelled by this request, and the body carries no `results`. |
+| `422` | `error: "CANCEL_SWEEP_TOO_MANY_TOKEN_PAIRS"` | The request covers more token pairs than one cancel request may. Nothing was cancelled, `results` is `[]`, and `tokenPairsRequested` and `tokenPairLimit` give the two figures. Cancel in smaller requests, by market or by event. Whether a limit applies is set per deployment, so handle this whether or not you have seen it. |
+| `503` | `error: "ORDER_SERVICE_UNAVAILABLE"` | Hit cannot report on the request. Branch on `outcome`: `nothing-cancelled` means it never started, so re-send the identical request; `unknown` means it may or may not have cancelled, so read your open orders before re-sending. `results` holds any verdicts reached before the failure, so process them. Carries `Retry-After` and `retryAfterSeconds`. |
+| `503` | `error: "ORDER_ADMISSION_UNAVAILABLE"` | The venue declined the command. Carries `errorCode`, `Retry-After` and `results`. See [Admission Errors](#admission-errors). |
+
+Branch on the status first, then on `error`. Do not branch on `message`.
 
 ## Get Order Book Events
 
@@ -314,7 +352,7 @@ For `engine-busy` and `idempotency-unverifiable`, re-send the identical body and
 
 None of these values means your order is invalid or your balance is insufficient. A genuinely insufficient balance is a `400`, and retrying it will not help.
 
-`NotAdmittedMarket`, returned in `notAdmitted` by `POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event`:
+`NotAdmittedMarket`, returned in the deprecated `notAdmitted` field by `POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event`:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -323,7 +361,7 @@ None of these values means your order is invalid or your balance is insufficient
 | `message` | string | Yes | Error message. |
 | `retryAfterSeconds` | integer | Yes | Seconds to wait before retrying. |
 
-A market listed in `notAdmitted` also appears in `failedMarkets`, so a client that ignores `notAdmitted` behaves exactly as it did before the field existed. Nothing in such a market was cancelled, and other markets in the same request may have been, so re-send rather than assuming either way.
+`notAdmitted` and `failedMarkets` are deprecated and will be removed. Read the same refusal from `results` instead: every order in such a market that the venue had not yet decided carries `code: "engine-busy"`, and anything it decided before declining carries its own verdict. Other markets in the same request may have been cancelled, so re-send rather than assuming either way. `results` entries carry no `retryAfterSeconds`.
 
 ## Order
 
