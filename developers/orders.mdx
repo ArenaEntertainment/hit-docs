@@ -368,7 +368,9 @@ for (const entry of results) {
 }
 ```
 
-If a `207` carries no entry that is still resting, read your open orders before re-sending. A `503` whose `error` is `ORDER_SERVICE_UNAVAILABLE` carries an `outcome`: `nothing-cancelled` means the request never started and can be re-sent as it is; `unknown` means it may or may not have cancelled, so read your open orders first. Both `503` refusals can still carry `results` for orders the venue reached before the failure. The `request` helper above throws on any status that is not a 2xx, so read those bodies from the error.
+The `request` helper above returns only the body, and throws on any status that is not a 2xx. To tell `200` from `207`, read `response.status` in your own helper before parsing the body. If a `207` carries no entry that is still resting, read your open orders before re-sending.
+
+A `503` whose `error` is `ORDER_SERVICE_UNAVAILABLE` carries an `outcome`: `nothing-cancelled` means the request never started and can be re-sent as it is; `unknown` means it may or may not have cancelled, so read your open orders first. That `503` and the `ORDER_ADMISSION_UNAVAILABLE` one described under [Admission Errors](/api-reference/orders#admission-errors) can both still carry `results` for orders the venue reached before the failure.
 
 ### Migrating from the market fields
 
@@ -379,6 +381,7 @@ The cancel-all and cancel-event responses currently carry five market-level fiel
 | `failedMarkets`, to decide what to retry | The entries in `results` that are still resting, as in the example above. Re-send for those, and read your open orders first for any marked `unknown`. |
 | `notAdmitted`, for markets the venue refused | Entries in `results` with `code: "engine-busy"`. They carry no `retryAfterSeconds`. |
 | `clearedMarkets`, `markets` or `cancelled`, to confirm the cancel worked | The status. `200` means every order in scope is off the book. |
+| A `201` status, as success | Any 2xx. These routes answer `200` or `207`, not `201`. |
 
 `results` entries carry no market ID. If you need to know which market an order was in, use your own order records or `GET /orders/{id}`.
 

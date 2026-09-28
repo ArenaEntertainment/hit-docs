@@ -293,7 +293,7 @@ Entries carry no market ID.
 | Status | Body | Meaning |
 | --- | --- | --- |
 | `200` | `CancelSweepResponse` | Every order in scope is off the book, either cancelled by this request or already gone when it arrived. |
-| `207` | `CancelSweepResponse` | At least one order is still resting, which includes a request in which nothing was cancelled. The resting orders are the unsuccessful entries whose `code` is not `state-conflict` or `not-found`. If `results` holds none, read your open orders before re-sending. |
+| `207` | `CancelSweepResponse` | At least one order is still resting or may be, which includes a request in which nothing was cancelled. Those orders are the unsuccessful entries whose `code` is not `state-conflict` or `not-found`. If `results` holds none, read your open orders before re-sending. |
 | `409` | Error | You already have a cancel in flight. Nothing was cancelled by this request, and the body carries no `results`. |
 | `422` | `error: "CANCEL_SWEEP_TOO_MANY_TOKEN_PAIRS"` | The request covers more token pairs than one cancel request may. Nothing was cancelled, `results` is `[]`, and `tokenPairsRequested` and `tokenPairLimit` give the two figures. Cancel in smaller requests, by market or by event. Whether a limit applies is set per deployment, so handle this whether or not you have seen it. |
 | `503` | `error: "ORDER_SERVICE_UNAVAILABLE"` | Hit cannot report on the request. Branch on `outcome`: `nothing-cancelled` means it never started, so re-send the identical request; `unknown` means it may or may not have cancelled, so read your open orders before re-sending. `results` holds any verdicts reached before the failure, so process them. Carries `Retry-After` and `retryAfterSeconds`. |
