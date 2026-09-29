@@ -65,7 +65,7 @@ Query parameters:
 | `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
 | `includeResolution` | boolean | No | Include the `resolution` timeline on each market. Default `false`. |
 | `marketScope` | enum string | No | `AUTO`, `RECENT` or `ALL`. Default `AUTO` for every caller. |
-| `marketLimit` | integer | No | Number of markets returned when the effective scope is `RECENT`. Default `50`, range `1` to `200`. Ignored for `ALL`. |
+| `marketLimit` | integer | No | Number of markets returned when the effective scope is `RECENT`. Default `50`, range `1` to `200`. Still validated under `ALL`, where it does not change the page size. |
 | `marketCursor` | string | No | Opaque cursor from the previous response's `nextMarketCursor`. Valid only with `marketScope=ALL`. |
 
 `AUTO` uses a recent bounded window for series-layout events and otherwise returns all public markets in one response. Public responses omit DRAFT markets under every scope.
@@ -169,7 +169,8 @@ Response type: `EventUserPositions[]`.
 | `templateId` | UUID string | No | Template UUID when generated from a template. |
 | `categories` | `Category[]` | No | Event categories. |
 | `tags` | `Tag[]` | No | Normalized tag assignments when loaded. |
-| `markets` | `Market[]` | Yes | Markets in the event. |
+| `markets` | `Market[]` | Yes | Markets in the event. On Get Event, a window of them under `RECENT` and one page of them under `ALL`; see `marketScope`. |
+| `nextMarketCursor` | string or null | No | Get Event with `marketScope=ALL` only: the cursor for the next page of markets, or `null` on the last page. |
 | `isInitialized` | boolean | Yes | Whether the event has been initialized on chain. |
 | `totalVolumeUSD` | string | No | Total trade volume across event markets. Present when volume is calculated. |
 | `liquidity` | string | No | Total pending-order liquidity. Present when liquidity is calculated. |
