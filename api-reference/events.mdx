@@ -64,10 +64,13 @@ Query parameters:
 | --- | --- | --- | --- |
 | `includeVolume` | boolean | No | Include market `tradeVolumeUsd` and `tradeVolumeUsd24h`. |
 | `includeResolution` | boolean | No | Include the `resolution` timeline on each market. Default `false`. |
-| `marketScope` | enum string | No | `AUTO`, `RECENT` or `ALL`. Public default `AUTO`; admin default `ALL`. |
-| `marketLimit` | integer | No | Number of markets returned when the effective scope is `RECENT`. Default `50`, range `1` to `200`. |
+| `marketScope` | enum string | No | `AUTO`, `RECENT` or `ALL`. Default `AUTO` for every caller. |
+| `marketLimit` | integer | No | Number of markets returned when the effective scope is `RECENT`. Default `50`, range `1` to `200`. Ignored for `ALL`. |
+| `marketCursor` | string | No | Opaque cursor from the previous response's `nextMarketCursor`. Valid only with `marketScope=ALL`. |
 
-`AUTO` uses a recent bounded window for series-layout events and otherwise returns all public markets. Public responses omit DRAFT markets even when `marketScope=ALL`.
+`AUTO` uses a recent bounded window for series-layout events and otherwise returns all public markets in one response. Public responses omit DRAFT markets under every scope.
+
+With `marketScope=ALL`, the response carries at most 50 markets, newest first (latest `startDate` first), and a `nextMarketCursor` field. Pass its value back unchanged as `marketCursor` to get the next 50; when `nextMarketCursor` is `null` there are no more markets. Do not parse or modify the cursor. `nextMarketCursor` is absent under the other scopes. Sending `marketCursor` without `marketScope=ALL`, or a value this endpoint did not issue, returns `400`.
 
 Response type: `Event`.
 
