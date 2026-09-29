@@ -374,7 +374,7 @@ A `503` whose `error` is `ORDER_SERVICE_UNAVAILABLE` carries an `outcome`: `noth
 
 ### Migrating from the market fields
 
-The cancel-all and cancel-event responses currently carry five market-level fields beside `results`: `clearedMarkets`, `failedMarkets`, `notAdmitted`, `markets` and `cancelled`. **These fields are deprecated and will be removed.** `results` is returned today, so move to it now. A client that reads only `results` and the status is unaffected when the fields go.
+The cancel-all and cancel-event responses used to carry five market-level fields beside `results`: `clearedMarkets`, `failedMarkets`, `notAdmitted`, `markets` and `cancelled`. **These fields were removed in `markets-v0.0.149`.** The response now carries `results` alone, so a client that still reads any of those fields finds them absent. Read `results` and the status instead.
 
 | If you read | Read instead |
 | --- | --- |

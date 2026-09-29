@@ -256,17 +256,12 @@ Response type: `CancelSweepResponse`. See [Cancel Sweep Response](#cancel-sweep-
 `POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event` return `CancelSweepResponse` with a status of `200` or `207`.
 
 <Warning>
-The five market fields in this response — `clearedMarkets`, `failedMarkets`, `notAdmitted`, `markets` and `cancelled` — are deprecated and will be removed. Read `results`, which is returned today. See [Migrating from the market fields](/developers/orders#migrating-from-the-market-fields).
+The five market fields this response used to carry — `clearedMarkets`, `failedMarkets`, `notAdmitted`, `markets` and `cancelled` — were removed in `markets-v0.0.149`. `results` is the source for what became of your orders. See [Migrating from the market fields](/developers/orders#migrating-from-the-market-fields).
 </Warning>
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `results` | `CancelSweepOrderResult[]` | Yes | One entry per order the request covered, across every market. Read this to learn what became of your orders. `[]` when nothing needed cancelling. |
-| `clearedMarkets` | UUID string[] | Yes | **Deprecated.** Market UUIDs whose cancel completed. |
-| `failedMarkets` | UUID string[] | No | **Deprecated.** Market UUIDs whose cancel did not complete. Do not decide what to retry from this field; read `results`. |
-| `notAdmitted` | `NotAdmittedMarket[]` | No | **Deprecated.** Markets the venue declined to admit. See [Admission Errors](#admission-errors). |
-| `markets` | object[] | Yes | **Deprecated.** A summary of each market the request touched. |
-| `cancelled` | integer | Yes | **Deprecated.** Number of orders this request cancelled. |
 
 `CancelSweepOrderResult`:
 
@@ -352,16 +347,7 @@ For `engine-busy` and `idempotency-unverifiable`, re-send the identical body and
 
 None of these values means your order is invalid or your balance is insufficient. A genuinely insufficient balance is a `400`, and retrying it will not help.
 
-`NotAdmittedMarket`, returned in the deprecated `notAdmitted` field by `POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `market` | UUID string | Yes | Market UUID. |
-| `errorCode` | enum string | Yes | Reason the venue declined the market, such as `engine-busy`. |
-| `message` | string | Yes | Error message. |
-| `retryAfterSeconds` | integer | Yes | Seconds to wait before retrying. |
-
-`notAdmitted` and `failedMarkets` are deprecated and will be removed. Read the same refusal from `results` instead: every order in such a market that the venue had not yet decided carries `code: "engine-busy"`, and anything it decided before declining carries its own verdict. Other markets in the same request may have been cancelled, so re-send rather than assuming either way. `results` entries carry no `retryAfterSeconds`.
+`POST /api/v1/orders/cancel-all` and `POST /api/v1/orders/cancel-event` report a market the venue declined through `results`: every order in such a market that the venue had not yet decided carries `code: "engine-busy"`, and anything it decided before declining carries its own verdict. Other markets in the same request may have been cancelled, so re-send rather than assuming either way. `results` entries carry no `retryAfterSeconds`.
 
 ## Order
 
