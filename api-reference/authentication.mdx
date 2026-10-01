@@ -36,7 +36,17 @@ Rules:
 
 The legacy message, `timestamp + method + path + body` concatenated with no separator and with the query string excluded from `path`, is still accepted. See [Developer Authentication](/developers/authentication) for how the two forms differ, a worked example, and the requests that accept only the legacy message.
 
-Every REST request that fails **trading API key** authentication returns `401` with the message `Authentication failed`, whatever the cause. Routes that also accept a JWT can answer differently when you present one instead: a transport failure while verifying a JWT is a `503`, not this `401`.
+A REST request whose **trading API key** fails authentication returns `401` with the message `Authentication failed`, whatever check failed.
+
+A request whose key could not be checked, because the auth service could not be asked about it, returns `503` instead. Its body's `error` is `CREDENTIAL_UNVERIFIABLE` and its `message` is `Service Unavailable`, and it carries no `Retry-After` header. It says nothing about whether your key is valid: re-send the request, signed again with a fresh `hit-timestamp`, and do not deactivate or replace the key because of it. It can come from any endpoint that verifies a key, including `GET /markets`, `GET /markets/{id_or_slug}`, `GET /markets/{id_or_slug}/users`, `GET /markets/{id_or_slug}/holders` and `GET /markets/activity`, which verify the key when you send `hit-api-key` and refuse a failing one with the `401` above.
+
+When you present a JWT instead:
+
+| Endpoint | JWT fails verification | JWT could not be verified |
+| --- | --- | --- |
+| Requires a JWT, or accepts one in place of an API key | `401` | `503` with `error: CREDENTIAL_UNVERIFIABLE`, as above |
+| `GET /markets`, `GET /markets/{id_or_slug}`, `GET /markets/{id_or_slug}/users`, `GET /markets/{id_or_slug}/holders`, `GET /markets/activity` (without `hit-api-key`), `GET /markets/activity/{marketId}`, `GET /leaderboards`, `GET /rewards/leaderboard` | `403` | `403` |
+| `GET /events`, `GET /events/{id_or_slug}`, `GET /events/{id_or_slug}/volume`, `GET /events/{id}/positions` | Answered as a request with no credential | Answered as a request with no credential |
 
 ## WebSocket Auth Payload
 
