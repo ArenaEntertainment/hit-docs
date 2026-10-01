@@ -307,7 +307,7 @@ A REST request whose trading API key fails authentication returns `401` with the
 
 If your client branches on the older, more specific messages such as `Invalid signature` or `Invalid passphrase`, stop: those strings are no longer returned.
 
-A `401` never means your key could not be checked. When the auth service cannot be asked about your key, the request returns `503` with `error: CREDENTIAL_UNVERIFIABLE` and no `Retry-After` header instead. Your key was not checked, so re-send the request, signed again with a fresh `hit-timestamp`, and keep the key.
+A `401` never means your key could not be checked. A request whose key could not be checked, because the auth service could not be asked about it, returns `503` with `error: CREDENTIAL_UNVERIFIABLE` and no `Retry-After` header instead. Your key was not checked, so re-send the request, signed again with a fresh `hit-timestamp`, and keep the key.
 
 ## Security Notes
 
