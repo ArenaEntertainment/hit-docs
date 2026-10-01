@@ -203,7 +203,7 @@ A failed reply is returned as its own status rather than collapsed into a `409`:
 | `503` | The message broker failed. |
 | `409` | Another cancel-shaped batch is already in flight, or the lock service failed after your cancel was already published. In the second case the orders may already be cancelled, so re-read them rather than assuming nothing happened. |
 
-None of these carries a `Retry-After` header or an `errorCode`. `408` and `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing.
+None of these carries a `Retry-After` header or an `errorCode`. A `503` whose `error` is `CREDENTIAL_UNVERIFIABLE` is not one of them: your API key could not be checked, so the request was not attempted and nothing was cancelled. `408` and the broker's `503` are lost-response cases: the orders may or may not have been cancelled, so re-read them before re-issuing.
 
 ## Cancel Market Orders
 
@@ -293,6 +293,7 @@ Entries carry no market ID.
 | `422` | `error: "CANCEL_SWEEP_TOO_MANY_TOKEN_PAIRS"` | The request covers more token pairs than one cancel request may. Nothing was cancelled, `results` is `[]`, and `tokenPairsRequested` and `tokenPairLimit` give the two figures. Cancel in smaller requests, by market or by event. Whether a limit applies is set per deployment, so handle this whether or not you have seen it. |
 | `503` | `error: "ORDER_SERVICE_UNAVAILABLE"` | Hit cannot report on the request. Branch on `outcome`: `nothing-cancelled` means it never started, so re-send the identical request; `unknown` means it may or may not have cancelled, so read your open orders before re-sending. `results` holds any verdicts reached before the failure, so process them. Carries `Retry-After` and `retryAfterSeconds`. |
 | `503` | `error: "ORDER_ADMISSION_UNAVAILABLE"` | The venue declined the command. Carries `errorCode`, `Retry-After` and `results`. See [Admission Errors](#admission-errors). |
+| `503` | `error: "CREDENTIAL_UNVERIFIABLE"` | Your API key could not be checked, so the request was not attempted and nothing was cancelled. No `results` and no `Retry-After`. See [Authentication](/api-reference/authentication). |
 
 Branch on the status first, then on `error`. Do not branch on `message`.
 
