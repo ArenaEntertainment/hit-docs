@@ -36,7 +36,7 @@ Rules:
 
 The legacy message, `timestamp + method + path + body` concatenated with no separator and with the query string excluded from `path`, is still accepted. See [Developer Authentication](/developers/authentication) for how the two forms differ, a worked example, and the requests that accept only the legacy message.
 
-A REST request whose **trading API key** fails authentication returns `401` with the message `Authentication failed`, whatever check failed, once your key has been checked against its current credentials.
+A REST request whose **trading API key** fails authentication returns `401` with the message `Authentication failed`, whatever check failed, except when the key could not be checked, below.
 
 A request whose key could not be checked that way, because the auth service could not be asked about it or did not answer with the key's credentials or a refusal, returns `503` instead. That includes a request whose signature or passphrase does not match a copy of the key's credentials Hit holds while the auth service cannot confirm them. Its body's `error` is `CREDENTIAL_UNVERIFIABLE` and its `message` is `Service Unavailable`, and it carries no `Retry-After` header. It says nothing about whether your key is valid: re-send the request, signed again with a fresh `hit-timestamp`, and do not deactivate or replace the key because of it. It can come from any endpoint that verifies a key, including `GET /markets`, `GET /markets/{id_or_slug}`, `GET /markets/{id_or_slug}/users`, `GET /markets/{id_or_slug}/holders` and `GET /markets/activity`, which verify the key when you send `hit-api-key` and refuse a failing one with the `401` above.
 
