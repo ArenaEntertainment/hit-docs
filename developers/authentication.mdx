@@ -297,7 +297,7 @@ The server responds on `user-authenticated` with `{ "success": true }` or `{ "su
 
 ## Authentication Failures
 
-A REST request whose trading API key fails authentication returns `401` with the message `Authentication failed`. The response does not say which check failed, so work through the causes in order:
+A REST request whose trading API key fails authentication, once it has been checked against the key's current credentials, returns `401` with the message `Authentication failed`. The response does not say which check failed, so work through the causes in order:
 
 - A required header is missing.
 - The timestamp is outside the 30 second window, usually because the host clock has drifted.
@@ -307,7 +307,7 @@ A REST request whose trading API key fails authentication returns `401` with the
 
 If your client branches on the older, more specific messages such as `Invalid signature` or `Invalid passphrase`, stop: those strings are no longer returned.
 
-A `401` never means your key could not be checked. A request whose key could not be checked, because the auth service could not be asked about it, returns `503` with `error: CREDENTIAL_UNVERIFIABLE` and no `Retry-After` header instead. Your key was not checked, so re-send the request, signed again with a fresh `hit-timestamp`, and keep the key.
+A `401` never means your key could not be checked. A request whose key could not be checked against its current credentials, because the auth service could not be asked about it or did not answer with them or a refusal, returns `503` with `error: CREDENTIAL_UNVERIFIABLE` and no `Retry-After` header instead. Your key was not checked, so re-send the request, signed again with a fresh `hit-timestamp`, and keep the key.
 
 ## Security Notes
 

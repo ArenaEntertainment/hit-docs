@@ -321,7 +321,7 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 
 `POST /api/v1/orders` answers `503` when the order could not be signed, submitted or admitted. Every `503` on that endpoint means nothing was created, so re-sending the identical body cannot duplicate the order. Each of these responses carries a `Retry-After` header and repeats the same figure in the body as `retryAfterSeconds`.
 
-A `503` whose `error` is `CREDENTIAL_UNVERIFIABLE` is not one of these. Your API key or JWT could not be checked, so the order was not attempted. It carries no `Retry-After` header and none of the fields below; see [Authentication](/api-reference/authentication).
+A `503` whose `error` is `CREDENTIAL_UNVERIFIABLE` is not one of these. Your API key or JWT could not be checked, so the order was not attempted. Its body has `statusCode`, `error` and `message` only, with no `errorCode` and no `retryAfterSeconds`, and it carries no `Retry-After` header; see [Authentication](/api-reference/authentication).
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
