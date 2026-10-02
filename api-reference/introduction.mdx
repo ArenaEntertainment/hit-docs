@@ -103,8 +103,8 @@ and `X-RateLimit-Reset`, and this body:
   until the bucket is **full** again. Do not read it as one number across both.
 </Warning>
 
-A request whose authentication guard rejects it first, with `401` or `403`, carries no rate-limit
-headers at all.
+A request whose authentication guard rejects it first, with `401`, `403` or `503`, carries no
+rate-limit headers at all.
 
 ## Errors
 
