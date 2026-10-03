@@ -222,7 +222,7 @@ Response type: `EventUserPositions[]`.
 | `tradeVolumeUsd24h` | string | No | 24-hour trade volume in USD. |
 | `proposedAt` | string (date-time) or null | No | Current proposal timestamp. |
 | `proposedPrice` | string or null | No | Current UMA proposed value. |
-| `resolution` | object | No | Resolution timeline, present when `includeResolution=true`. |
+| `resolution` | object | No | Resolution timeline, returned when `includeResolution=true`. It can be absent even when requested: that means the market's status is not known right now (it has not been computed yet after a deploy, or the server cannot vouch for it), not that nothing has been proposed. |
 | `priceTargetConfig` | object | No | Per-market price-target configuration when present. |
 | `displayTimezone` | string or null | Yes | IANA timezone used to render this market's times. Markets without a configured timezone return `null` and should be displayed in UTC. |
 | `reward` | `MarketReward` or null | No | Current-period reward opportunity, present when `includeRewards=true`; `null` when the market has no active or later-today opportunity. |
