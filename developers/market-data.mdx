@@ -204,4 +204,4 @@ The maximum fidelity is `5` minutes for `1H`, `15` for `6H`, `60` for `1D`, `240
 curl 'https://hit.com/api/v1/events/EVENT_ID?includeResolution=true'
 ```
 
-Each returned market includes a `resolution` object with its current status, final or proposed outcome labels, dispute state and timestamp. Public event responses omit DRAFT markets.
+Each returned market whose status is known includes a `resolution` object with its current status, final or proposed outcome labels, dispute state and timestamp. A market can be returned without `resolution`: that means its status is not known right now (it has not been computed yet after a deploy, or the server cannot vouch for it), not that nothing has been proposed, so check for the field before reading it. Public event responses omit DRAFT markets.
