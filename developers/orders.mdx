@@ -235,6 +235,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
 
+## Taker Delay
+
+Some markets hold marketable orders for a short delay before matching. An order is marketable when it would match against an order already on the book, which makes it a taker order. Orders that rest on the book without matching are not delayed.
+
+Read the delay for any market from its `speedBumpDelayMs` field in [market data](/developers/market-data).
+
+| Markets | Delay |
+| --- | --- |
+| Short-dated up/down markets | 250ms |
+
+Read `speedBumpDelayMs` rather than hard-coding these values. The table shows where delays apply today, and more market types may get one in future.
+
+You cannot cancel an order while it is delayed. On the `/user` WebSocket namespace, an `order-speed-bump-pending` event tells you an order was delayed before matching. See [WebSockets](/developers/websockets#events).
+
 ## Retrying a Failed Order
 
 `POST /orders` answers `503` when your order could not be signed, submitted or admitted. Nothing is created when it does, so re-sending the identical body cannot duplicate the order. Each of these `503`s carries a `Retry-After` header and repeats the same figure in the body as `retryAfterSeconds`.
