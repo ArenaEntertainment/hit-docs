@@ -237,15 +237,17 @@ The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
 
 ## Taker Delay
 
-Some markets hold taker orders for a short delay before matching. Read the delay for any market from its `speedBumpDelayMs` field in [market data](/developers/market-data).
+Some markets hold marketable orders for a short delay before matching. An order is marketable when it would match against an order already on the book, which makes it a taker order. Orders that rest on the book without matching are not delayed.
+
+Read the delay for any market from its `speedBumpDelayMs` field in [market data](/developers/market-data).
 
 | Markets | Delay |
 | --- | --- |
-| Up/down markets that cover less than 24 hours | 250ms |
+| Short-dated up/down markets | 250ms |
 
 Read `speedBumpDelayMs` rather than hard-coding these values. The table shows where delays apply today, and more market types may get one in future.
 
-On the `/user` WebSocket namespace, an `order-speed-bump-pending` event tells you an order was delayed before matching. See [WebSockets](/developers/websockets#events).
+You cannot cancel an order while it is delayed. On the `/user` WebSocket namespace, an `order-speed-bump-pending` event tells you an order was delayed before matching. See [WebSockets](/developers/websockets#events).
 
 ## Retrying a Failed Order
 
