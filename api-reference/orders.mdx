@@ -367,24 +367,33 @@ None of these values means your order is invalid or your balance is insufficient
 | `expiration` | integer | Yes | Unix timestamp in seconds, or `0`. |
 | `nonce` | integer | Yes | Maker nonce. |
 | `feeRateBps` | integer | Yes | Fee rate in basis points. |
+| `passiveFeeRateBps` | integer | Yes | Passive fee rate in basis points. |
 | `side` | integer | Yes | `0` buy, `1` sell. |
 | `signatureType` | integer | Yes | Signature type. |
 | `signature` | string | Yes | EIP-712 signature. |
 | `market` | UUID string | Yes | Market UUID. |
 | `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
+| `exchangeKind` | string | Yes | Exchange kind. |
 | `postOnly` | boolean | No | Whether the order was submitted as maker-only. |
 | `owner` | UUID string | Yes | Hit user ID that owns the order. |
 | `outcome` | string | Yes | Outcome label. |
 | `status` | enum string | Yes | `PENDING`, `EXECUTING`, `EXECUTED`, `CANCELLED` or `REJECTED`. |
 | `createdAt` | string (date-time) | Yes | Creation timestamp. |
+| `updatedAt` | string (date-time) | Yes | Last update timestamp. |
+| `bookedAt` | string (date-time) | No | Time the order was booked. Present only once the order rests on the book. |
 | `amount` | number | Yes | Order size in display units. |
 | `price` | number | Yes | Limit price. |
 | `matchedAmount` | number | Yes | Filled amount in display units. |
+| `makerAmountMatched` | number | Yes | Maker amount matched. |
+| `takerAmountMatched` | number | Yes | Taker amount matched. |
+| `inflightAmount` | number | No | In-flight amount. Present only when it is not zero. |
 | `hash` | string | Yes | EIP-712 order hash, lowercase `0x`-prefixed, 66 characters. If you sign client-side you can compute it before submission from the signed order fields and the exchange's EIP-712 domain; server-signed orders learn it from this response. The same value appears on every WebSocket event that names the order. |
-| `priceUint` | string | Yes | Integer price representation. |
+| `priceUint` | number | Yes | Integer price representation, sent as a JSON number written from a double. A standard parser such as JavaScript's `JSON.parse` reads exactly what is sent. Exact for every price on the market's tick grid. A `FAK` or `FOK` order is not held to the tick, so its price can need more digits than a double keeps, and `priceUint` is then the nearest double. The exact figure is `floor(makerAmount × 10^18 / takerAmount)` for a buy and `floor(takerAmount × 10^18 / makerAmount)` for a sell. |
+| `source` | string | No | Order source. Present only when known. |
+| `cancelSource` | string | No | Cancellation source. Present only once the order is cancelled. |
 | `metadata` | object | No | Additional order metadata. |
 
-`OrderWithMarket` contains every `Order` field plus required `marketInfo: OrderMarketInfo`. `GET /orders`, `GET /orders/paginated` and `GET /orders/{id}` return this enriched shape. Order values returned by create-order, cancel-order and cancel-market endpoints use the plain `Order` shape. Batch and cancel-all responses use the wrapper types documented above.
+`OrderWithMarket` contains every `Order` field except `inflightAmount`, `bookedAt`, `source` and `cancelSource`, plus required `marketInfo: OrderMarketInfo`. `GET /orders`, `GET /orders/paginated` and `GET /orders/{id}` return this enriched shape. Order values returned by create-order, cancel-order and cancel-market endpoints use the plain `Order` shape. Batch and cancel-all responses use the wrapper types documented above.
 
 `OrderMarketInfo`:
 
