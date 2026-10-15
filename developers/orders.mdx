@@ -21,9 +21,10 @@ Hit accepts low-level order payloads built from outcome token amounts.
 | `orderType` | Yes | `GTC`, `FOK` or `FAK` |
 | `feeRateBps` | Client-signed only | Must match the market `orderFeeRateBps` |
 | `signature` | Optional | Include for client-signed orders; omit when using server-side session signer |
-| `priceUint` | Optional | Server-compatible price integer when your client already computes it |
 | `idempotencyKey` | Optional | UUID v4 used to deduplicate repeated submission of the same logical order |
 | `postOnly` | Optional | Maker-only GTC order; rejected if it would cross the book |
+
+Do not send `priceUint`. The server sets it, and the request validator rejects a body that carries it.
 
 Amounts use 6 decimals:
 

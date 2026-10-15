@@ -105,8 +105,9 @@ Request body type: `CreateOrder`.
 | `signature` | string | No | Client-side EIP-712 order signature. |
 | `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
 | `postOnly` | boolean | No | Maker-only flag. Valid for GTC only; a crossing post-only order is rejected. Default `false`. |
-| `priceUint` | string | No | Server-compatible price integer. |
 | `idempotencyKey` | UUID v4 string | No | Client key for deduplicating repeated submission of the same logical order. |
+
+Do not send `priceUint`. The server sets it, and the request validator rejects a body that carries it.
 
 Response type: `Order`.
 
