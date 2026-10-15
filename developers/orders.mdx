@@ -389,7 +389,7 @@ for (const entry of results) {
 
 The `request` helper above returns only the body, and throws on any status that is not a 2xx. To tell `200` from `207`, read `response.status` in your own helper before parsing the body. If a `207` carries no entry that is still resting, read your open orders before re-sending.
 
-A `503` whose `error` is `ORDER_SERVICE_UNAVAILABLE` carries an `outcome`: `nothing-cancelled` means the request never started and can be re-sent as it is; `unknown` means it may or may not have cancelled, so read your open orders first. That `503` and the `ORDER_ADMISSION_UNAVAILABLE` one described under [Admission Errors](/api-reference/orders#admission-errors) can both still carry `results` for orders the venue reached before the failure.
+A `503` whose `error` is `ORDER_SERVICE_UNAVAILABLE` carries an `outcome`: `nothing-cancelled` means the request never started and can be re-sent as it is; `unknown` means it may or may not have cancelled, so read your open orders first. One cause of `nothing-cancelled` is that the sweep could not read its list of your orders (order reads at capacity, no database connection free in time, or no way to confirm the list includes every order you were acknowledged for), so it acted on none of them. That `503` and the `ORDER_ADMISSION_UNAVAILABLE` one described under [Admission Errors](/api-reference/orders#admission-errors) can both still carry `results` for orders the venue reached before the failure.
 
 ### Migrating from the market fields
 

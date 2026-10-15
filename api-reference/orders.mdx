@@ -28,6 +28,8 @@ Response type: `OrderWithMarket[]`.
 
 When `status` is omitted, the endpoint returns all non-cancelled statuses. Passing `status=CANCELLED` returns `400`.
 
+Can return `503` with `error: "ORDER_READS_UNAVAILABLE"`. See [Order Read Errors](#order-read-errors).
+
 ## List Orders Paginated
 
 ```text
@@ -66,6 +68,8 @@ Response type: `OrderPagination`.
 | `hasMore` | boolean | Yes | Whether another cursor page exists. |
 | `nextCursor` | string or null | Yes | Opaque cursor for the next page. |
 
+Can return `503` with `error: "ORDER_READS_UNAVAILABLE"`. See [Order Read Errors](#order-read-errors).
+
 ## Get Order
 
 ```text
@@ -81,6 +85,8 @@ Path parameters:
 | `id` | UUID string | Yes | Order UUID. |
 
 Response type: `OrderWithMarket`.
+
+Can return `503` with `error: "ORDER_READS_UNAVAILABLE"`. See [Order Read Errors](#order-read-errors).
 
 ## Create Order
 
@@ -292,7 +298,7 @@ Entries carry no market ID.
 | `207` | `CancelSweepResponse` | At least one order is still resting or may be, which includes a request in which nothing was cancelled. Those orders are the unsuccessful entries whose `code` is not `state-conflict` or `not-found`. If `results` holds none, read your open orders before re-sending. |
 | `409` | Error | You already have a cancel in flight. Nothing was cancelled by this request, and the body carries no `results`. |
 | `422` | `error: "CANCEL_SWEEP_TOO_MANY_TOKEN_PAIRS"` | The request covers more token pairs than one cancel request may. Nothing was cancelled, `results` is `[]`, and `tokenPairsRequested` and `tokenPairLimit` give the two figures. Cancel in smaller requests, by market or by event. Whether a limit applies is set per deployment, so handle this whether or not you have seen it. |
-| `503` | `error: "ORDER_SERVICE_UNAVAILABLE"` | Hit cannot report on the request. Branch on `outcome`: `nothing-cancelled` means it never started, so re-send the identical request; `unknown` means it may or may not have cancelled, so read your open orders before re-sending. `results` holds any verdicts reached before the failure, so process them. Carries `Retry-After` and `retryAfterSeconds`. |
+| `503` | `error: "ORDER_SERVICE_UNAVAILABLE"` | Hit cannot report on the request. Branch on `outcome`: `nothing-cancelled` means it never started, so re-send the identical request. One cause is that the sweep cannot read its list of your orders, because order reads are at capacity, no database connection comes free in time, or it cannot confirm the list includes every order you were acknowledged for; it then acts on none of your orders. `unknown` means it may or may not have cancelled, so read your open orders before re-sending. `results` holds any verdicts reached before the failure, so process them. Carries `Retry-After` and `retryAfterSeconds`. |
 | `503` | `error: "ORDER_ADMISSION_UNAVAILABLE"` | The venue declined the command. Carries `errorCode`, `Retry-After` and `results`. See [Admission Errors](#admission-errors). |
 | `503` | `error: "CREDENTIAL_UNVERIFIABLE"` | Your API key could not be checked, so the request was not attempted and nothing was cancelled. No `results` and no `Retry-After`. See [Authentication](/api-reference/authentication). |
 
@@ -317,6 +323,10 @@ Query parameters:
 Response type: `Pagination<OrderbookEvent>`.
 
 When `total=true`, the count is bounded and the response can include `totalCapped`.
+
+## Order Read Errors
+
+`GET /api/v1/orders`, `GET /api/v1/orders/paginated` and `GET /api/v1/orders/{id}` answer `503` with `error: "ORDER_READS_UNAVAILABLE"` when the server's order-read capacity stays taken for the whole wait. The response carries a `Retry-After: 1` header and `retryAfterSeconds: 1` in the body. A read changes nothing, so re-send the identical request. `GET /api/v1/rewards/me/qualifying-orders` can answer the same `503`.
 
 ## Admission Errors
 
