@@ -74,6 +74,8 @@ Response type: `QualifyingOrder[]`.
 | `price` | number | Yes | Order price from `0` to `1`. |
 | `sizeUsdc` | string | Yes | Remaining resting USDC notional, formatted to 6 decimal places. |
 
+Can return `503` with `error: "ORDER_READS_UNAVAILABLE"`, a `Retry-After: 1` header and `retryAfterSeconds: 1` when the server's order-read capacity stays taken for the whole wait. A read changes nothing, so re-send the identical request. See [Order Read Errors](/api-reference/orders#order-read-errors).
+
 ## Get My Reward History
 
 ```text
