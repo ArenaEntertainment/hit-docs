@@ -18,7 +18,7 @@ To start trading on Hit, you'll need to deposit funds into your account. Before 
 
 #### QR Code
 
-Select a network and token to generate a deposit address (shown as a QR code). Any supported funds sent to this address are automatically converted to USDC on the Base network and credited to your Hit wallet. Review the estimated fees shown in the app before confirming your transfer.
+Select a network and token to generate a deposit address (shown as a QR code). Any supported funds sent to this address are automatically converted to USDC on the Base network and credited to your HIT wallet. Review the estimated fees shown in the app before confirming your transfer.
 
 #### Connected Wallet
 
@@ -26,10 +26,10 @@ If you have a wallet connected, select a supported token and the amount you want
 
 #### Direct Transfer
 
-You can send USDC on the Base network directly to your Hit wallet. Your Hit wallet is your own self-custodial wallet. You can find its address on your Profile page, and export the private key from account settings.
+You can send USDC on the Base network directly to your HIT wallet. Your HIT wallet is your own self-custodial wallet. You can find its address on your Profile page, and export the private key from account settings.
 
 <Warning>
-  **Important:** Only send USDC on the Base network, and only to your Hit wallet.
+  **Important:** Only send USDC on the Base network, and only to your HIT wallet.
   - Sending a different token, or USDC on a different network, will result in permanent loss of funds.
   - Sending to any other address, including an exchange deposit address, cannot be recovered by Hit support.
 </Warning>
@@ -57,12 +57,12 @@ Then:
 
 ### Account Upgrade to One Wallet
 
-Hit is moving existing accounts from two wallets (a signing wallet plus a smart contract wallet, sometimes called a proxy wallet) to one: your own Hit wallet. Hit does this for you, and you don't need to do anything.
+Hit is moving existing accounts from two wallets (a signing wallet plus a smart contract wallet, sometimes called a proxy wallet) to one: your own HIT wallet. Hit does this for you, and you don't need to do anything.
 
 - The upgrade takes about 20 to 40 seconds. While it runs, you see an "upgrading your account" banner.
 - During the upgrade you can't place orders, withdraw, transfer, split, merge or claim. You can still cancel orders. Any open orders you have are cancelled, so place them again once the upgrade finishes.
 - Afterwards you have the same cash and the same positions, at the same buy prices.
-- Your deposit address is now your own Hit wallet. If USDC is sent to your old deposit address, Hit moves it to your Hit wallet automatically, usually within about a minute. {/* CONFIRM(sergio): only USDC arrivals trigger the sweep; shares and ETH move on the next USDC-triggered sweep and other tokens are not moved (HITX-1748, 19 Oct). Mention shares and ETH here, or keep it to USDC? */}
+- Your deposit address is now your own HIT wallet. If USDC is sent to your old deposit address, Hit moves it to your HIT wallet automatically, usually within about a minute. {/* CONFIRM(sergio): how long the automatic move from the old address keeps running; and only USDC arrivals trigger it (shares and ETH ride the next USDC sweep, other tokens are not moved, HITX-1748 19 Oct), so mention shares and ETH or not? */}
 
 ### Need Help?
 
