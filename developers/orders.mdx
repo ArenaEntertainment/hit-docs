@@ -44,7 +44,7 @@ Limit order prices must be valid multiples of the market `tickSize`.
 
 ### Client-Signed Orders
 
-Sign with signature type `0` when `maker` and `signer` are the same address (your own wallet). Server-signed orders need no change. An order signed for a wallet your account no longer uses is refused with `400`.
+Sign with signature type `0` when maker and signer are the same address, your own wallet. If Hit signs your orders for you, there is nothing to do. An order whose maker is not your account's wallet is refused with 400.
 
 ## Place an Order
 
