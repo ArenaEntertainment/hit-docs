@@ -44,18 +44,7 @@ Limit order prices must be valid multiples of the market `tickSize`.
 
 ### Client-Signed Orders
 
-If you let the server sign your orders (you omit `signature`), nothing changes for you.
-
-If you sign orders yourself, use signature type `0` when `maker` and `signer` are the same address: your own HIT wallet, the address of the key you sign with. To find your `maker`, call `GET /markets/value` and read the `user` it returns.
-
-| `user` returned | `maker` | `signer` | `signatureType` |
-| --- | --- | --- | --- |
-| Your own HIT wallet | Your HIT wallet | Your HIT wallet | `0` |
-| Any other address (your account has not yet been upgraded to one wallet) | The returned address | The address of the key you sign with | `2` |
-
-The EIP-712 domain and the exchange contract addresses are the same for both signature types.
-
-Once your account is upgraded, sign with signature type `0` and your own wallet as `maker`. There is no compatibility mode: an order signed with the old `maker` and signature type `2` is refused with `400` because its signature does not match its signer. Hit gives notice before upgrading accounts that trade through the API. {/* CONFIRM(sergio): date bot and API accounts are upgraded */}
+Sign with signature type `0` when `maker` and `signer` are the same address (your own wallet). Server-signed orders need no change. An order signed for a wallet your account no longer uses is refused with `400`.
 
 ## Place an Order
 
