@@ -4,7 +4,7 @@ description: User position, portfolio value and account activity endpoint refere
 ---
 
 <Info>
-  Hit accounts now trade from one wallet, the user's own Hit wallet. Fields on this page whose names or descriptions refer to a proxy wallet keep their wire names for now and refer to the wallet the user trades from. {/* CONFIRM(sergio): which of these fields are renamed or only deprecated, their new names, and the date the proxy-named fields are removed */}
+  Hit accounts now trade from one wallet, the user's own HIT wallet. Address fields refer to the wallet the user trades from. Fields that only apply to the previous proxy wallet keep their names and are marked deprecated. {/* CONFIRM(sergio): final deprecated-field list to follow */}
 </Info>
 
 ## Get User Positions
@@ -50,14 +50,14 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user` | address string | No | Proxy wallet address. Defaults to the authenticated user. |
+| `user` | address string | No | Wallet address. Defaults to the authenticated user. |
 | `markets` | UUID string or UUID string[] | No | Market IDs to filter positions. Send once or as repeated query parameters. |
 
 Response type: `UserPositionValue`.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user` | address string | Yes | Proxy wallet address used for the calculation. |
+| `user` | address string | Yes | Wallet address used for the calculation. |
 | `value` | number | Yes | Total position value in USD. |
 
 ## Get User Activity
@@ -257,7 +257,7 @@ Response type: `BatchMergeResponse`.
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |
 | `conditionId` | string | Yes | Conditional Tokens condition ID. |
-| `proxy_address` | address string | Yes | User proxy wallet address. |
+| `proxy_address` | address string | Yes | User proxy wallet address. Deprecated. Will be removed in a future release, with notice. |
 | `outcome1` | string | Yes | Outcome 1 label. |
 | `outcome2` | string | Yes | Outcome 2 label. |
 | `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |

@@ -4,7 +4,7 @@ description: Socket.IO namespace, client message and server event reference
 ---
 
 <Info>
-  Hit accounts now trade from one wallet, the user's own Hit wallet. Fields on this page whose names or descriptions refer to a proxy wallet keep their wire names for now and refer to the wallet the user trades from. {/* CONFIRM(sergio): which of these fields are renamed or only deprecated, their new names, and the date the proxy-named fields are removed */}
+  Hit accounts now trade from one wallet, the user's own HIT wallet. Address fields refer to the wallet the user trades from. Fields that only apply to the previous proxy wallet keep their names and are marked deprecated. {/* CONFIRM(sergio): final deprecated-field list to follow */}
 </Info>
 
 Base URL:
@@ -290,7 +290,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `user-disconnect` | empty object | Unsubscribe from the user channel. |
 | `initial-data` | empty object | Request initial collateral balances. |
 | `initial-shares-by-market` | UUID string | Request shares for a market and subscribe to share updates. |
-| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user proxy wallet. |
+| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user's wallet. |
 
 `UserConnectPayload`:
 
@@ -313,8 +313,8 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | --- | --- | --- |
 | `user-authenticated` | `UserAuthenticated` | Authentication result. |
 | `app-error` | `AppError` | WebSocket error frame. |
-| `collateral-balance` | `BalanceUpdate` | Proxy wallet collateral balance. |
-| `collateral-balance-eoa` | `BalanceUpdate` | EOA collateral balance. |
+| `collateral-balance` | `BalanceUpdate` | Wallet collateral balance. |
+| `collateral-balance-eoa` | `BalanceUpdate` | EOA collateral balance. Deprecated. Will be removed in a future release, with notice. |
 | `shares-by-market-update` | `MarketSharesUpdate` | Shares update for a subscribed market. |
 | `user-positions-update` | `UserPositionUpdate` | Position update. |
 | `user-order` | `UserOrderEvent[]` | Order update. |
@@ -358,8 +358,8 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `id` | UUID string | Yes | Hit user ID. |
 | `evmAddress` | address string | Yes | User EOA address. |
 | `email` | string | No | User email when available. |
-| `proxyWalletAddress` | address string | No | User proxy wallet address. |
-| `proxyWalletSetup` | boolean | Yes | Whether proxy wallet setup is complete. |
+| `proxyWalletAddress` | address string | No | User proxy wallet address. Deprecated. Will be removed in a future release, with notice. |
+| `proxyWalletSetup` | boolean | Yes | Whether proxy wallet setup is complete. Deprecated. Will be removed in a future release, with notice. |
 | `createdAt` | string (date-time) | Yes | User creation timestamp. |
 | `updatedAt` | string (date-time) | Yes | Last user update timestamp. |
 | `nonce` | string | Yes | User auth nonce. |
@@ -372,7 +372,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `tokenId` | string | Yes | Outcome token ID. |
-| `proxyAddress` | address string | Yes | User proxy wallet address. |
+| `proxyAddress` | address string | Yes | User proxy wallet address. Deprecated. Will be removed in a future release, with notice. |
 | `amount` | string | Yes | Updated token amount. |
 | `acquisitionPrice` | number | Yes | Acquisition price. |
 | `timestamp` | string (date-time) | Yes | Update timestamp. |
@@ -472,5 +472,5 @@ Three gaps make the hash the only reliable link:
 | `event_type` | enum string | Yes | `transaction`. |
 | `txHash` | string | Yes | Transaction hash. |
 | `status` | enum string | Yes | `success` or `failed`. |
-| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position` or `multisend`. |
+| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position` or `multisend`. The values `proxy_wallet_create`, `proxy_wallet_setup` and `multisend`: Deprecated. Will be removed in a future release, with notice. |
 | `timestamp` | integer | Yes | Emit timestamp in milliseconds. |
