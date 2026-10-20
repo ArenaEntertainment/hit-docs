@@ -42,6 +42,19 @@ For limit orders:
 
 Limit order prices must be valid multiples of the market `tickSize`.
 
+### Client-Signed Orders
+
+If you sign orders yourself, the `maker`, `signer` and `signatureType` you sign over depend on which wallet your account trades from. Call `GET /markets/value` and read the `user` it returns: that address is your `maker`. {/* CONFIRM(sergio): mirror the type 0 rule in metamarket-backend PR 1807's TRADING_API_GUIDE paragraph (not readable from here); and is /markets/value the supported way for an API-key client without a JWT to learn its wallet mode (HITX-2036)? */}
+
+| `user` returned | `maker` | `signer` | `signatureType` |
+| --- | --- | --- | --- |
+| Your own Hit wallet, the address of the key you sign with | Your Hit wallet | Your Hit wallet | `0` |
+| Any other address (your account has not yet been upgraded to one wallet) | The returned address | The address of the key you sign with | `2` |
+
+The EIP-712 domain and the exchange contract addresses are the same for both signature types.
+
+Once your account is upgraded, an order signed with the old `maker` and signature type `2` is refused with `400` because its signature does not match its signer. Hit gives notice before upgrading accounts that trade through the API. {/* CONFIRM(sergio): bot and API account notice period and date */}
+
 ## Place an Order
 
 <Tabs sync={false}>
@@ -413,7 +426,7 @@ These endpoints also accept API key authentication:
 | Request | Description |
 | --- | --- |
 | `GET /markets/user-positions` | Current user positions |
-| `GET /markets/value` | Position value for the current user or a supplied proxy wallet |
+| `GET /markets/value` | Position value for the current user or a supplied wallet address. The returned `user` is the `maker` to sign orders with |
 | `GET /markets/user-activity` | User activity feed |
 | `GET /markets/traded-count` | Number of markets traded |
 | `GET /markets/redeemable-positions` | Resolved markets with positions you can redeem |
