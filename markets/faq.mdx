@@ -26,7 +26,7 @@ description: Everything you need to know about how Hit works.
     - **Google**: sign up instantly with your Google account.
     - **Connect Wallet**: use an existing crypto wallet.
 
-    Once signed up, Hit automatically creates two wallets: a self-custodial Privy wallet (you can export the private key anytime from account settings) and a smart contract wallet that enables gasless, seamless trading. For the best mobile experience, sign up with email or Google rather than wallet connection.
+    Once signed up, Hit automatically creates your Hit wallet, your own self-custodial wallet (you can export the private key anytime from account settings). Hit covers all network fees, so you never need ETH to trade. For the best mobile experience, sign up with email or Google rather than wallet connection.
 
     See [Signing up](/markets/signing-up) for more detail.
   </Accordion>
@@ -45,13 +45,12 @@ description: Everything you need to know about how Hit works.
     **Example:** you buy 100 Hit shares at $0.52 ($52 total). The price rises to $0.72 and you sell for $72, a $20 profit without waiting for the event to finish.
   </Accordion>
 
-  <Accordion title="Why do I have two wallets after signing up?">
-    Hit automatically provisions two wallets in the background so you can trade without paying gas or approving every transaction:
+  <Accordion title="What is my Hit wallet?">
+    Hit automatically creates one wallet for you when you sign up. It's your own self-custodial wallet: it holds your USDC and shares, it's the address you deposit to, and it sends your withdrawals. Hit covers all network fees, so you never need ETH to trade.
 
-    - **Privy wallet**: an app-specific, fully self-custodial wallet. You can export the private key anytime from account settings.
-    - **Smart contract wallet**: a smart contract wallet owned by your Privy wallet. It enables gasless transactions and a seamless trading experience.
+    You can export the private key anytime from account settings. Anyone with your private key controls your wallet and its funds, so never share it.
 
-    You're ready to trade once both wallets appear on your profile page. See [Signing up](/markets/signing-up) for the full walkthrough.
+    If you signed up before Hit moved to one wallet, Hit upgrades your account for you. See [Account upgrade to one wallet](/markets/deposits#account-upgrade-to-one-wallet). For the full walkthrough, see [Signing up](/markets/signing-up).
   </Accordion>
 </AccordionGroup>
 
@@ -142,7 +141,7 @@ description: Everything you need to know about how Hit works.
     Click your wallet balance at the top of the page, select **Manage Funds**, then **Deposit**. Available methods include QR code / wallet address, connected wallet, direct transfer of Base USDC, and (depending on your region) Coinbase Onramp or Moonpay.
 
     <Warning>
-      **Important:** You must send USDC on the Base network only to your primary Hit wallet. Any other token, network, or wallet address will result in permanent loss of funds.
+      **Important:** You must send USDC on the Base network only to your Hit wallet. Any other token, network, or wallet address will result in permanent loss of funds.
     </Warning>
 
     See [Deposits](/markets/deposits) for full instructions.

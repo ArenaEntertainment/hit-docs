@@ -26,12 +26,12 @@ If you have a wallet connected, select a supported token and the amount you want
 
 #### Direct Transfer
 
-You can send USDC on the Base network directly to your primary Hit wallet. Your primary wallet is your self-custodial Markets wallet. You can find its address on your Profile page, and export the private key from account settings.
+You can send USDC on the Base network directly to your Hit wallet. Your Hit wallet is your own self-custodial wallet. You can find its address on your Profile page, and export the private key from account settings.
 
 <Warning>
-  **Important:** Only send USDC on the Base network, and only to your primary Hit wallet.
+  **Important:** Only send USDC on the Base network, and only to your Hit wallet.
   - Sending a different token, or USDC on a different network, will result in permanent loss of funds.
-  - Sending to any other address, including your signer wallet or an exchange deposit address, cannot be recovered by Hit support.
+  - Sending to any other address, including an exchange deposit address, cannot be recovered by Hit support.
 </Warning>
 
 #### Coinbase Onramp
@@ -54,6 +54,15 @@ Then:
 1. Choose your preferred deposit method.
 2. Follow the on-screen instructions to complete your deposit.
 3. Start trading once your deposit is confirmed in your account.
+
+### Account Upgrade to One Wallet
+
+Hit is moving existing accounts from two wallets (a signing wallet plus a smart contract wallet, sometimes called a proxy wallet) to one: your own Hit wallet. Hit does this for you, and you don't need to do anything.
+
+- The upgrade takes about 20 to 40 seconds. While it runs, you see an "upgrading your account" banner.
+- During the upgrade you can't place orders, withdraw, transfer, split, merge or claim. You can still cancel orders. Any open orders you have are cancelled, so place them again once the upgrade finishes.
+- Afterwards you have the same cash and the same positions, at the same buy prices.
+- Your deposit address is now your own Hit wallet. If USDC is sent to your old deposit address, Hit moves it to your Hit wallet automatically, usually within about a minute. {/* CONFIRM(sergio): only USDC arrivals trigger the sweep; shares and ETH move on the next USDC-triggered sweep and other tokens are not moved (HITX-1748, 19 Oct). Mention shares and ETH here, or keep it to USDC? */}
 
 ### Need Help?
 
