@@ -44,7 +44,7 @@ Limit order prices must be valid multiples of the market `tickSize`.
 
 ### Client-Signed Orders
 
-Sign with signature type `0` when maker and signer are the same address, your own wallet. An order whose maker is not your account's wallet is refused with 400. See [Place a Client-Signed Order](#place-a-client-signed-order).
+Sign over your account's identity. After your account's upgrade, maker and signer are both your wallet and the signature type is `0`. Before it, the maker is your old wallet address, the signer is your wallet, and the signature type is `2`. `maker`, `signer`, `signatureType` and `nonce` are part of the signed message but are not sent in the body: Hit sets them from your account. See [Place a Client-Signed Order](#place-a-client-signed-order).
 
 ### Account Upgrades
 
@@ -54,7 +54,7 @@ While your account's wallet is being upgraded, `POST /orders` and `POST /orders/
 2. When the socket closes, reconnect, authenticate and subscribe again.
 3. Once orders are accepted again, read your open orders and replace the quotes that were cancelled.
 
-If you sign orders yourself, call `GET /markets/value` again before you sign, as the maker can change.
+If you sign orders yourself, call `GET /markets/value` again before you sign, as your maker and signature type change.
 
 ## Place an Order
 
@@ -254,9 +254,9 @@ The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
 
 To sign orders yourself:
 
-1. Call `GET /markets/value` without `user`. The returned `user` is your account's wallet. Sign with it as both `maker` and `signer`.
+1. Call `GET /markets/value` without `user`. The returned `user` is the `maker` to sign with. If it is your wallet's address, sign with signature type `0` and your wallet as `signer`. If it is a different address, your account has not been upgraded yet: sign with signature type `2`, that address as `maker` and your wallet as `signer`.
 2. Read the market with `GET /markets/{id_or_slug}` and pick the exchange from the market's `negRisk`, not the event's: the neg-risk exchange when it is `true`, the standard exchange otherwise.
-3. Sign the complete EIP-712 `Order` with signature type `0` and nonce `0`, using your wallet's private key.
+3. Sign the complete EIP-712 `Order` with nonce `0`, using your wallet's private key.
 4. Send the order with API key authentication.
 
 The signed message and the request body are not the same set of fields:
@@ -265,7 +265,7 @@ The signed message and the request body are not the same set of fields:
 | --- | --- | --- |
 | `salt`, `taker`, `tokenId`, `makerAmount`, `takerAmount`, `expiration`, `feeRateBps`, `side` | Yes | Yes, with the same values |
 | `maker`, `signer`, `signatureType` | Yes | No. Sending them returns `400` |
-| `nonce` | Yes | Only when retrying after a nonce-stale rejection |
+| `nonce` | Yes, always `0` | No |
 | `signature` | No | Yes |
 | `orderType`, `postOnly`, `idempotencyKey` | No | Yes |
 
@@ -280,9 +280,7 @@ The examples add to the `request` and `units` helpers from [Place an Order](#pla
 
 The same exchange addresses are also served by `GET /api/v1/contracts`.
 
-If your wallet has called `incrementNonce()` on that exchange, the order is refused with a nonce-stale rejection that carries the current value in `serverNonce`. Sign the order again over that nonce, send it as `nonce` in the body, and retry. The examples do this once.
-
-{/* CONFIRM(sergio): exact status and errorCode of the nonce-stale rejection */}
+A signed order whose nonce is not your wallet's current nonce on that exchange is refused with `400` and `errorCode: "nonce-stale"`. The nonce only moves if your wallet itself calls `incrementNonce()` on the exchange. After that, client-signed orders on that exchange cannot succeed, and this is terminal today: send orders without a `signature` so Hit signs them for you. A `nonce` field to recover from this is planned.
 
 <Tabs sync={false}>
 <Tab title="TypeScript">
@@ -314,10 +312,10 @@ const ORDER_TYPES = {
 const account = privateKeyToAccount(process.env.HIT_WALLET_PRIVATE_KEY! as `0x${string}`);
 
 // 1. Your signing identity. Do not pass `user` here.
-const { user } = (await request("GET", "/markets/value")) as { user: string };
-if (user.toLowerCase() !== account.address.toLowerCase()) {
-  throw new Error(`Private key is for ${account.address}, but your account trades from ${user}`);
-}
+const { user } = (await request("GET", "/markets/value")) as { user: `0x${string}` };
+const upgraded = user.toLowerCase() === account.address.toLowerCase();
+const maker = upgraded ? account.address : user;
+const signatureType = upgraded ? 0 : 2;
 
 // 2. The market and its exchange, chosen by the market's negRisk.
 const marketResponse = await fetch(`https://hit.com/api/v1/markets/${process.env.HIT_MARKET_ID!}`);
@@ -339,45 +337,28 @@ const order = {
   side: 0,
 };
 
-async function signAndSend(nonce?: bigint) {
-  const signature = await account.signTypedData({
-    domain: { ...EXCHANGE_DOMAIN, verifyingContract },
-    types: ORDER_TYPES,
-    primaryType: "Order",
-    message: {
-      salt: BigInt(order.salt),
-      maker: account.address,
-      signer: account.address,
-      taker: order.taker,
-      tokenId: BigInt(order.tokenId),
-      makerAmount: BigInt(order.makerAmount),
-      takerAmount: BigInt(order.takerAmount),
-      expiration: BigInt(order.expiration),
-      nonce: nonce ?? 0n,
-      feeRateBps: BigInt(order.feeRateBps),
-      side: order.side,
-      signatureType: 0,
-    },
-  });
+const signature = await account.signTypedData({
+  domain: { ...EXCHANGE_DOMAIN, verifyingContract },
+  types: ORDER_TYPES,
+  primaryType: "Order",
+  message: {
+    salt: BigInt(order.salt),
+    maker,
+    signer: account.address,
+    taker: order.taker,
+    tokenId: BigInt(order.tokenId),
+    makerAmount: BigInt(order.makerAmount),
+    takerAmount: BigInt(order.takerAmount),
+    expiration: BigInt(order.expiration),
+    nonce: 0n,
+    feeRateBps: BigInt(order.feeRateBps),
+    side: order.side,
+    signatureType,
+  },
+});
 
-  // 4. Submit: the signed fields plus signature and orderType. Send nonce only on a retry.
-  return request("POST", "/orders", {
-    ...order,
-    signature,
-    orderType: "GTC",
-    ...(nonce === undefined ? {} : { nonce: Number(nonce) }),
-  });
-}
-
-let created;
-try {
-  created = await signAndSend();
-} catch (error) {
-  // Nonce-stale: sign again over serverNonce and retry once.
-  const serverNonce = /"serverNonce"\s*:\s*"?(\d+)/.exec(String(error))?.[1];
-  if (serverNonce === undefined) throw error;
-  created = await signAndSend(BigInt(serverNonce));
-}
+// 4. Submit: the body fields plus signature and orderType. No maker, signer, signatureType or nonce.
+const created = await request("POST", "/orders", { ...order, signature, orderType: "GTC" });
 
 console.log(created);
 ```
@@ -420,8 +401,9 @@ account = Account.from_key(os.environ["HIT_WALLET_PRIVATE_KEY"])
 
 # 1. Your signing identity. Do not pass `user` here.
 user = request("GET", "/markets/value")["user"]
-if user.lower() != account.address.lower():
-    raise RuntimeError(f"Private key is for {account.address}, but your account trades from {user}")
+upgraded = user.lower() == account.address.lower()
+maker = account.address if upgraded else user
+signature_type = 0 if upgraded else 2
 
 # 2. The market and its exchange, chosen by the market's negRisk.
 market_response = requests.get(f"https://hit.com/api/v1/markets/{os.environ['HIT_MARKET_ID']}", timeout=10)
@@ -441,45 +423,31 @@ order = {
     "side": 0,
 }
 
-def sign_and_send(nonce: int | None = None):
-    signed = Account.sign_typed_data(
-        account.key,
-        full_message={
-            "types": ORDER_TYPES,
-            "primaryType": "Order",
-            "domain": {**EXCHANGE_DOMAIN, "verifyingContract": verifying_contract},
-            "message": {
-                "salt": int(order["salt"]),
-                "maker": account.address,
-                "signer": account.address,
-                "taker": order["taker"],
-                "tokenId": int(order["tokenId"]),
-                "makerAmount": int(order["makerAmount"]),
-                "takerAmount": int(order["takerAmount"]),
-                "expiration": order["expiration"],
-                "nonce": nonce or 0,
-                "feeRateBps": order["feeRateBps"],
-                "side": order["side"],
-                "signatureType": 0,
-            },
+signed = Account.sign_typed_data(
+    account.key,
+    full_message={
+        "types": ORDER_TYPES,
+        "primaryType": "Order",
+        "domain": {**EXCHANGE_DOMAIN, "verifyingContract": verifying_contract},
+        "message": {
+            "salt": int(order["salt"]),
+            "maker": maker,
+            "signer": account.address,
+            "taker": order["taker"],
+            "tokenId": int(order["tokenId"]),
+            "makerAmount": int(order["makerAmount"]),
+            "takerAmount": int(order["takerAmount"]),
+            "expiration": order["expiration"],
+            "nonce": 0,
+            "feeRateBps": order["feeRateBps"],
+            "side": order["side"],
+            "signatureType": signature_type,
         },
-    )
+    },
+)
 
-    # 4. Submit: the signed fields plus signature and orderType. Send nonce only on a retry.
-    body = {**order, "signature": "0x" + bytes(signed.signature).hex(), "orderType": "GTC"}
-    if nonce is not None:
-        body["nonce"] = nonce
-    return request("POST", "/orders", body)
-
-
-try:
-    created = sign_and_send()
-except requests.HTTPError as error:
-    # Nonce-stale: sign again over serverNonce and retry once.
-    server_nonce = error.response.json().get("serverNonce")
-    if server_nonce is None:
-        raise
-    created = sign_and_send(int(server_nonce))
+# 4. Submit: the body fields plus signature and orderType. No maker, signer, signatureType or nonce.
+created = request("POST", "/orders", {**order, "signature": "0x" + bytes(signed.signature).hex(), "orderType": "GTC"})
 
 print(created)
 ```
