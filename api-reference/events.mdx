@@ -164,7 +164,7 @@ Response type: `EventUserPositions[]`.
 | `orderFeeRateBps` | integer | Yes | Active order fee rate in basis points. |
 | `passiveOrderFeeRateBps` | integer | Yes | Passive order fee rate in basis points. |
 | `marketId` | string or null | No | The event's single on-chain market ID. On a single-market event it is that market's `marketId`; on a neg-risk event it is the neg-risk market ID its markets share. `null` on a multi-market event that is not neg-risk (read each market's `marketId` instead) and on an event not yet on chain. |
-| `ancillaryData` | string or null | No | Despite its name, not the question text: the event's prepared on-chain market ID, the same value as the event's `marketId` when both are set. `null` whenever `marketId` is `null`. Each market's question text is its own `ancillaryData`. |
+| `ancillaryData` | string or null | No | The event's prepared on-chain market ID, the same value as the event's `marketId` when both are set. On a single-market event that is the market's question text, equal to that market's `ancillaryData`; on a neg-risk event it is the neg-risk market ID, not question text. `null` whenever `marketId` is `null`. |
 | `metadata` | object | No | Optional JSON metadata. |
 | `templateId` | UUID string | No | Template UUID when generated from a template. |
 | `categories` | `Category[]` | No | Event categories. |
