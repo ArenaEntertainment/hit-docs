@@ -338,7 +338,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `tokenId` | string | Yes | Outcome token ID. |
 | `proxyAddress` | address string | Yes | User proxy wallet address. |
 | `amount` | string | Yes | Updated token amount. |
-| `acquisitionPrice` | number | Yes | Acquisition price. |
+| `acquisitionPrice` | number | Yes | Acquisition price. `0` when no cost basis is recorded for the position: read it as unknown, not as free. |
 | `timestamp` | string (date-time) | Yes | Update timestamp. |
 
 ### Binding events to your orders
