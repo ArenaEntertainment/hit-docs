@@ -204,7 +204,7 @@ Response type: `BatchMergeResponse`.
 | --- | --- | --- | --- |
 | `market_uuid` | UUID string | Yes | Market UUID. |
 | `tokenId` | string | Yes | Held outcome token ID. |
-| `acquisitionPrice` | string | Yes | Average acquisition price. |
+| `acquisitionPrice` | string | Yes | Average acquisition price. `"0"` when no purchase is recorded for the position, for example shares received from another wallet. |
 | `amount` | string | Yes | Token amount held. |
 | `latest` | string | Yes | Latest token price. |
 | `current` | string | Yes | Current position value. |
