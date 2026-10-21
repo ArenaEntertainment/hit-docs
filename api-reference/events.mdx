@@ -163,8 +163,8 @@ Response type: `EventUserPositions[]`.
 | `liveness` | integer | Yes | UMA liveness period in seconds. |
 | `orderFeeRateBps` | integer | Yes | Active order fee rate in basis points. |
 | `passiveOrderFeeRateBps` | integer | Yes | Passive order fee rate in basis points. |
-| `marketId` | string | Yes | On-chain market ID. Equal to `ancillaryData`, except on neg-risk markets (`negRisk` is `true`), where it is the neg-risk market ID. |
-| `ancillaryData` | string | Yes | The market's on-chain question text, as `0x`-prefixed hex. On UMA markets it ends with the `,initializer:` suffix and the initializer address, which UMA adds; on price-resolver and direct-resolver markets there is no suffix. |
+| `marketId` | string or null | No | The event's single on-chain market ID. On a single-market event it is that market's `marketId`; on a neg-risk event it is the neg-risk market ID its markets share. `null` on a multi-market event that is not neg-risk (read each market's `marketId` instead) and on an event not yet on chain. |
+| `ancillaryData` | string or null | No | Despite its name, not the question text: the event's prepared on-chain market ID, the same value as the event's `marketId` when both are set. `null` whenever `marketId` is `null`. Each market's question text is its own `ancillaryData`. |
 | `metadata` | object | No | Optional JSON metadata. |
 | `templateId` | UUID string | No | Template UUID when generated from a template. |
 | `categories` | `Category[]` | No | Event categories. |
