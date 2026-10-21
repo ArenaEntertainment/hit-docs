@@ -285,8 +285,8 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `user-connect` | `UserConnectPayload` | Authenticate and subscribe to the user channel. |
 | `user-disconnect` | empty object | Unsubscribe from the user channel. |
 | `initial-data` | empty object | Request initial collateral balances. |
-| `initial-shares-by-market` | UUID string | Request shares for a market and subscribe to share updates. |
-| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user proxy wallet. |
+| `initial-shares-by-market` | UUID string | **Retired. No longer handled**, so the server sends no reply. Use `user-positions-update` and `GET /api/v1/markets/user-positions`. |
+| `shares-by-market-disconnect` | empty object | **Retired. No longer handled.** |
 
 `UserConnectPayload`:
 
@@ -310,8 +310,8 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `user-authenticated` | `UserAuthenticated` | Authentication result. |
 | `app-error` | `AppError` | WebSocket error frame. |
 | `collateral-balance` | `BalanceUpdate` | Proxy wallet collateral balance. |
-| `collateral-balance-eoa` | `BalanceUpdate` | EOA collateral balance. |
-| `shares-by-market-update` | `MarketSharesUpdate` | Shares update for a subscribed market. |
+| `collateral-balance-eoa` | `BalanceUpdate` | **Retired. No longer emitted.** Use `collateral-balance`. |
+| `shares-by-market-update` | — | **Retired. No longer emitted.** Use `user-positions-update`. |
 | `user-positions-update` | `UserPositionUpdate` | Position update. |
 | `user-order` | `UserOrderEvent[]` | Order update. |
 | `user-trade` | `TradeEvent[]` | Trade update. |
@@ -330,38 +330,6 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `value` | string | Yes | Token balance. |
-
-`MarketSharesUpdate`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | UUID string | Yes | Market UUID. |
-| `user` | `SocketUser` | Yes | Authenticated user object. |
-| `token1` | `MarketShareToken` | Yes | Outcome 1 token balance. |
-| `token2` | `MarketShareToken` | Yes | Outcome 2 token balance. |
-
-`MarketShareToken`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | string | Yes | Outcome token ID. |
-| `balance` | string | Yes | Token balance. |
-
-`SocketUser`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | UUID string | Yes | Hit user ID. |
-| `evmAddress` | address string | Yes | User EOA address. |
-| `email` | string | No | User email when available. |
-| `proxyWalletAddress` | address string | No | User proxy wallet address. |
-| `proxyWalletSetup` | boolean | Yes | Whether proxy wallet setup is complete. |
-| `createdAt` | string (date-time) | Yes | User creation timestamp. |
-| `updatedAt` | string (date-time) | Yes | Last user update timestamp. |
-| `nonce` | string | Yes | User auth nonce. |
-| `name` | string | Yes | Display name. |
-| `imageURL` | string | Yes | Profile image URL. |
-| `roles` | object[] | No | User roles. |
 
 `UserPositionUpdate`:
 

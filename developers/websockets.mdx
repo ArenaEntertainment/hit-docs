@@ -405,8 +405,8 @@ User events:
 | `user-authenticated` | Server to client | `{ "success": boolean, "error"?: string }` |
 | `user-disconnect` | Client to server | No payload |
 | `initial-data` | Client to server | No payload |
-| `initial-shares-by-market` | Client to server | Market UUID |
-| `shares-by-market-disconnect` | Client to server | No payload |
+| `initial-shares-by-market` | Client to server | **Retired. No longer handled.** Use `user-positions-update` |
+| `shares-by-market-disconnect` | Client to server | **Retired. No longer handled.** |
 | `user-order` | Server to client | User order update |
 | `user-trade` | Server to client | User trade update |
 | `user-positions-update` | Server to client | Position update |
