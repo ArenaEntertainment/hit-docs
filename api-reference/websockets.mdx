@@ -340,7 +340,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `marketId` | UUID string | Yes | Market UUID. |
-| `user` | `SocketUser` | Yes | Authenticated user object. |
+| `user` | `SocketUser` | Yes | The user the update is for. |
 | `token1` | `MarketShareToken` | Yes | Outcome 1 token balance. |
 | `token2` | `MarketShareToken` | Yes | Outcome 2 token balance. |
 
@@ -356,16 +356,9 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | UUID string | Yes | Hit user ID. |
-| `evmAddress` | address string | Yes | User wallet address. |
-| `email` | string | No | User email when available. |
-| `proxyWalletAddress` | address string | No | User proxy wallet address. Deprecated. Will be removed in a future release, with notice. |
-| `proxyWalletSetup` | boolean | Yes | Whether proxy wallet setup is complete. Deprecated. Will be removed in a future release, with notice. |
-| `createdAt` | string (date-time) | Yes | User creation timestamp. |
-| `updatedAt` | string (date-time) | Yes | Last user update timestamp. |
-| `nonce` | string | Yes | User auth nonce. |
-| `name` | string | Yes | Display name. |
-| `imageURL` | string | Yes | Profile image URL. |
-| `roles` | object[] | No | User roles. |
+| `proxyWalletAddress` | address string or null | No | Legacy wallet address, if one was created. Retained after the account upgrade; not the current trading address. Deprecated. Will be removed in a future release, with notice. |
+
+Use `GET /markets/value` without `user` to discover the current maker.
 
 `UserPositionUpdate`:
 
