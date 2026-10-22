@@ -109,6 +109,7 @@ Request body type: `CreateOrder`.
 | `feeRateBps` | integer | No | Fee rate in basis points. Range `0` to `10000`. |
 | `side` | integer | Yes | `0` buy, `1` sell. |
 | `signature` | string | No | Client-side EIP-712 order signature. |
+| `nonce` | integer | No | Maker nonce the order is signed over, for an order you sign yourself. `0` when omitted. Sent without `signature`, the request is refused with `400`. After a `nonce-stale` refusal, sign the order again over its `serverNonce` and send that value here. |
 | `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
 | `postOnly` | boolean | No | Maker-only flag. Valid for GTC only; a crossing post-only order is rejected. Default `false`. |
 | `idempotencyKey` | UUID v4 string | No | Client key for deduplicating repeated submission of the same logical order. |
@@ -121,7 +122,7 @@ This endpoint returns `503` when the order could not be signed, submitted or adm
 
 | Status | Body | Meaning |
 | --- | --- | --- |
-| `409` | `errorCode: "wallet-migration-in-progress"` | Your account's wallet is being upgraded, so the request is refused. Retryable: back off and re-send. See [Account Upgrades](/developers/orders#account-upgrades). |
+| `400` | `errorCode: "nonce-stale"`, `serverNonce` | The order was signed over a nonce other than the one Hit holds for your wallet on that exchange, which `serverNonce` gives. If you signed it, sign it again over `serverNonce` and send that value as `nonce`; see [Place a Client-Signed Order](/developers/orders#place-a-client-signed-order). If Hit signed it, re-send it as it is. |
 
 ## Create Batch Orders
 
@@ -153,14 +154,11 @@ Response type: `CreateBatchOrdersResponse`.
 | `hash` | string | No | EIP-712 hash of the created order when `success` is true, lowercase `0x`-prefixed. The same value the order's WebSocket events and `GET /orders` carry. If you signed the order yourself, compare it with the order you submitted at `index`. |
 | `code` | string | No | Machine-readable reason when unsuccessful. |
 | `error` | string | No | Error message when unsuccessful. |
+| `serverNonce` | integer | No | On a `nonce-stale` entry, the nonce Hit holds for your wallet on that exchange. If you signed the order, sign it again over this value and send it as `nonce`. An order Hit signed can be re-sent as it is. |
 
 The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted`, `nonce-stale` and `order-archived`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
 
 This route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, in which case no order in the batch was created.
-
-| Status | Body | Meaning |
-| --- | --- | --- |
-| `409` | `errorCode: "wallet-migration-in-progress"` | Your account's wallet is being upgraded, so the request is refused. Retryable: back off and re-send. See [Account Upgrades](/developers/orders#account-upgrades). |
 
 ## Cancel Order
 
