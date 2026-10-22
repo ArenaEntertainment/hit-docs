@@ -213,7 +213,7 @@ Response type: `BatchMergeResponse`.
 | `latest` | string | Yes | Latest token price. |
 | `current` | string | Yes | Current position value. |
 | `initial` | string | Yes | Initial position value: `acquisitionPrice` × `amount`. `"0"` when no purchase is recorded for the position, which means unknown, not measured. Shares held beyond those bought are valued at the bought average. |
-| `return` | string | Yes | Position return. `"0"` when no purchase is recorded for the position, which means unknown, not unchanged. |
+| `return` | string or null | Yes | Position return, as a percentage. `null` when the position's booked cost is zero, negative or missing, as for a position with no recorded purchase. |
 | `icon` | string | No | Market icon URL. |
 | `slug` | string | No | Market slug. |
 | `title` | string | No | Market title. |
