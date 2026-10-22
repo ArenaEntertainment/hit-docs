@@ -289,8 +289,8 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `user-connect` | `UserConnectPayload` | Authenticate and subscribe to the user channel. |
 | `user-disconnect` | empty object | Unsubscribe from the user channel. |
 | `initial-data` | empty object | Request initial collateral balances. |
-| `initial-shares-by-market` | UUID string | Request shares for a market and subscribe to share updates. |
-| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user's wallet. |
+| `initial-shares-by-market` | UUID string | Retired. No longer handled, so the server sends no reply. Use `user-positions-update` and `GET /api/v1/markets/user-positions`. |
+| `shares-by-market-disconnect` | empty object | Retired. No longer handled. |
 
 `UserConnectPayload`:
 
@@ -315,7 +315,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `app-error` | `AppError` | WebSocket error frame. |
 | `collateral-balance` | `BalanceUpdate` | Wallet collateral balance. |
 | `collateral-balance-eoa` | `BalanceUpdate` | Retired. No longer emitted. Use `collateral-balance`. |
-| `shares-by-market-update` | `MarketSharesUpdate` | Shares update for a subscribed market. |
+| `shares-by-market-update` | — | Retired. No longer emitted. Use `user-positions-update`. |
 | `user-positions-update` | `UserPositionUpdate` | Position update. |
 | `user-order` | `UserOrderEvent[]` | Order update. |
 | `user-trade` | `TradeEvent[]` | Trade update. |
@@ -335,31 +335,6 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | --- | --- | --- | --- |
 | `value` | string | Yes | Token balance. |
 
-`MarketSharesUpdate`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | UUID string | Yes | Market UUID. |
-| `user` | `SocketUser` | Yes | The user the update is for. |
-| `token1` | `MarketShareToken` | Yes | Outcome 1 token balance. |
-| `token2` | `MarketShareToken` | Yes | Outcome 2 token balance. |
-
-`MarketShareToken`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | string | Yes | Outcome token ID. |
-| `balance` | string | Yes | Token balance. |
-
-`SocketUser`:
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `id` | UUID string | Yes | Hit user ID. |
-| `proxyWalletAddress` | address string or null | No | Legacy wallet address, if one was created. Retained after the account upgrade; not the current trading address. Deprecated. Will be removed in a future release, with notice. |
-
-Use `GET /markets/value` without `user` to discover the current maker.
-
 `UserPositionUpdate`:
 
 | Field | Type | Required | Description |
@@ -367,7 +342,7 @@ Use `GET /markets/value` without `user` to discover the current maker.
 | `tokenId` | string | Yes | Outcome token ID. |
 | `proxyAddress` | address string | Yes | Address holding the position: your wallet, or your old wallet for a position held before your account's upgrade. Deprecated. Will be removed in a future release, with notice. |
 | `amount` | string | Yes | Updated token amount. |
-| `acquisitionPrice` | number | Yes | Acquisition price. |
+| `acquisitionPrice` | number | Yes | Acquisition price. `0` when no cost basis is recorded for the position: read it as unknown, not as free. |
 | `timestamp` | string (date-time) | Yes | Update timestamp. |
 
 ### Binding events to your orders
