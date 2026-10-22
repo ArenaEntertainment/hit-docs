@@ -119,6 +119,10 @@ Response type: `Order`.
 
 This endpoint returns `503` when the order could not be signed, submitted or admitted. Every `503` here means nothing was created, so re-sending the identical body cannot duplicate the order. See [Admission Errors](#admission-errors). An insufficient balance is a `400`, not a `503`, and retrying it will not help.
 
+| Status | Body | Meaning |
+| --- | --- | --- |
+| `409` | `errorCode: "wallet-migration-in-progress"` | Your account's wallet is being upgraded, so the request is refused. Retryable: back off and re-send. See [Account Upgrades](/developers/orders#account-upgrades). |
+
 ## Create Batch Orders
 
 ```text
@@ -153,6 +157,10 @@ Response type: `CreateBatchOrdersResponse`.
 The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted`, `nonce-stale` and `order-archived`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
 
 This route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, in which case no order in the batch was created.
+
+| Status | Body | Meaning |
+| --- | --- | --- |
+| `409` | `errorCode: "wallet-migration-in-progress"` | Your account's wallet is being upgraded, so the request is refused. Retryable: back off and re-send. See [Account Upgrades](/developers/orders#account-upgrades). |
 
 ## Cancel Order
 

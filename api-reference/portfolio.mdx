@@ -3,6 +3,10 @@ title: Portfolio
 description: User position, portfolio value and account activity endpoint reference
 ---
 
+<Info>
+  Address fields refer to the wallet the user trades from. Fields marked deprecated will be removed in a future release, with notice.
+</Info>
+
 ## Get User Positions
 
 ```text
@@ -46,14 +50,14 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user` | address string | No | Proxy wallet address. Defaults to the authenticated user. |
+| `user` | address string | No | Wallet address. Defaults to the authenticated user. |
 | `markets` | UUID string or UUID string[] | No | Market IDs to filter positions. Send once or as repeated query parameters. |
 
 Response type: `UserPositionValue`.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `user` | address string | Yes | Proxy wallet address used for the calculation. |
+| `user` | address string | Yes | Wallet address used for the calculation. |
 | `value` | number | Yes | Total position value in USD. |
 
 ## Get User Activity
@@ -253,7 +257,7 @@ Response type: `BatchMergeResponse`.
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |
 | `conditionId` | string | Yes | Conditional Tokens condition ID. |
-| `proxy_address` | address string | Yes | User proxy wallet address. |
+| `proxy_address` | address string | Yes | Address that made this activity: your wallet, or your old wallet for earlier activity. Deprecated. Will be removed in a future release, with notice. |
 | `outcome1` | string | Yes | Outcome 1 label. |
 | `outcome2` | string | Yes | Outcome 2 label. |
 | `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |

@@ -3,6 +3,10 @@ title: WebSocket Reference
 description: Socket.IO namespace, client message and server event reference
 ---
 
+<Info>
+  Address fields refer to the wallet the user trades from. Fields marked deprecated will be removed in a future release, with notice.
+</Info>
+
 Base URL:
 
 ```text
@@ -286,7 +290,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | `user-disconnect` | empty object | Unsubscribe from the user channel. |
 | `initial-data` | empty object | Request initial collateral balances. |
 | `initial-shares-by-market` | UUID string | Request shares for a market and subscribe to share updates. |
-| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user proxy wallet. |
+| `shares-by-market-disconnect` | empty object | Stop share update subscriptions for the user's wallet. |
 
 `UserConnectPayload`:
 
@@ -309,8 +313,8 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | --- | --- | --- |
 | `user-authenticated` | `UserAuthenticated` | Authentication result. |
 | `app-error` | `AppError` | WebSocket error frame. |
-| `collateral-balance` | `BalanceUpdate` | Proxy wallet collateral balance. |
-| `collateral-balance-eoa` | `BalanceUpdate` | EOA collateral balance. |
+| `collateral-balance` | `BalanceUpdate` | Wallet collateral balance. |
+| `collateral-balance-eoa` | `BalanceUpdate` | Retired. No longer emitted. Use `collateral-balance`. |
 | `shares-by-market-update` | `MarketSharesUpdate` | Shares update for a subscribed market. |
 | `user-positions-update` | `UserPositionUpdate` | Position update. |
 | `user-order` | `UserOrderEvent[]` | Order update. |
@@ -336,7 +340,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `marketId` | UUID string | Yes | Market UUID. |
-| `user` | `SocketUser` | Yes | Authenticated user object. |
+| `user` | `SocketUser` | Yes | The user the update is for. |
 | `token1` | `MarketShareToken` | Yes | Outcome 1 token balance. |
 | `token2` | `MarketShareToken` | Yes | Outcome 2 token balance. |
 
@@ -352,23 +356,16 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | UUID string | Yes | Hit user ID. |
-| `evmAddress` | address string | Yes | User EOA address. |
-| `email` | string | No | User email when available. |
-| `proxyWalletAddress` | address string | No | User proxy wallet address. |
-| `proxyWalletSetup` | boolean | Yes | Whether proxy wallet setup is complete. |
-| `createdAt` | string (date-time) | Yes | User creation timestamp. |
-| `updatedAt` | string (date-time) | Yes | Last user update timestamp. |
-| `nonce` | string | Yes | User auth nonce. |
-| `name` | string | Yes | Display name. |
-| `imageURL` | string | Yes | Profile image URL. |
-| `roles` | object[] | No | User roles. |
+| `proxyWalletAddress` | address string or null | No | Legacy wallet address, if one was created. Retained after the account upgrade; not the current trading address. Deprecated. Will be removed in a future release, with notice. |
+
+Use `GET /markets/value` without `user` to discover the current maker.
 
 `UserPositionUpdate`:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `tokenId` | string | Yes | Outcome token ID. |
-| `proxyAddress` | address string | Yes | User proxy wallet address. |
+| `proxyAddress` | address string | Yes | Address holding the position: your wallet, or your old wallet for a position held before your account's upgrade. Deprecated. Will be removed in a future release, with notice. |
 | `amount` | string | Yes | Updated token amount. |
 | `acquisitionPrice` | number | Yes | Acquisition price. |
 | `timestamp` | string (date-time) | Yes | Update timestamp. |
@@ -468,5 +465,5 @@ Three gaps make the hash the only reliable link:
 | `event_type` | enum string | Yes | `transaction`. |
 | `txHash` | string | Yes | Transaction hash. |
 | `status` | enum string | Yes | `success` or `failed`. |
-| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position` or `multisend`. |
+| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position` or `multisend`. The values `proxy_wallet_create`, `proxy_wallet_setup` and `multisend`: Deprecated. Will be removed in a future release, with notice. |
 | `timestamp` | integer | Yes | Emit timestamp in milliseconds. |
