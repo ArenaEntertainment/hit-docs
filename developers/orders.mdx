@@ -42,6 +42,20 @@ For limit orders:
 
 Limit order prices must be valid multiples of the market `tickSize`.
 
+### Client-Signed Orders
+
+Sign over your account's identity. After your account's upgrade, maker and signer are both your wallet and the signature type is `0`. Before it, the maker is your old wallet address, the signer is your wallet, and the signature type is `2`. `maker`, `signer`, `signatureType` and `nonce` are part of the signed message but are not sent in the body: Hit sets them from your account. See [Place a Client-Signed Order](#place-a-client-signed-order).
+
+### Account Upgrades
+
+While your account's wallet is being upgraded, `POST /orders` and `POST /orders/batch` answer `409` with `errorCode: "wallet-migration-in-progress"`. This applies whether you sign orders yourself or Hit signs them for you. The upgrade also cancels your resting orders and closes your `/user` WebSocket connection.
+
+1. Treat the `409` as retryable: back off and re-send.
+2. When the socket closes, reconnect, authenticate and subscribe again.
+3. Once orders are accepted again, read your open orders and replace the quotes that were cancelled.
+
+If you sign orders yourself, call `GET /markets/value` again before you sign, as your maker and signature type change.
+
 ## Place an Order
 
 <Tabs sync={false}>
@@ -236,6 +250,213 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 The examples buy 50 shares for 31 USDC, which is a 0.62 limit price.
 
+## Place a Client-Signed Order
+
+To sign orders yourself:
+
+1. Call `GET /markets/value` without `user`. The returned `user` is the `maker` to sign with. If it is your wallet's address, sign with signature type `0` and your wallet as `signer`. If it is a different address, your account has not been upgraded yet: sign with signature type `2`, that address as `maker` and your wallet as `signer`.
+2. Read the market with `GET /markets/{id_or_slug}` and pick the exchange from the market's `negRisk`, not the event's: the neg-risk exchange when it is `true`, the standard exchange otherwise.
+3. Sign the complete EIP-712 `Order` with nonce `0`, using your wallet's private key.
+4. Send the order with API key authentication.
+
+The signed message and the request body are not the same set of fields:
+
+| Field | Signed message | `POST /orders` body |
+| --- | --- | --- |
+| `salt`, `taker`, `tokenId`, `makerAmount`, `takerAmount`, `expiration`, `feeRateBps`, `side` | Yes | Yes, with the same values |
+| `maker`, `signer`, `signatureType` | Yes | No. Sending them returns `400` |
+| `nonce` | Yes, always `0` | No |
+| `signature` | No | Yes |
+| `orderType`, `postOnly`, `idempotencyKey` | No | Yes |
+
+The examples add to the `request` and `units` helpers from [Place an Order](#place-an-order). Set `HIT_MARKET_ID` to the market and `HIT_WALLET_PRIVATE_KEY` to the private key of your HIT Wallet. Keep the key secret: anyone who has it controls your funds.
+
+| EIP-712 domain | Value |
+| --- | --- |
+| `name` | `Metawin CTF Exchange` |
+| `version` | `1` |
+| `chainId` | `8453` (Base) |
+| `verifyingContract` | The exchange the order goes to: standard `0x71aCeb0c45f4d58a2549Dd21F1aDc8E86d2899EA`, neg-risk `0xDf667F94322fEcCa5D56a72Bb21a8a418b5EaC94` |
+
+The same exchange addresses are also served by `GET /api/v1/contracts`.
+
+A signed order whose nonce is not your wallet's current nonce on that exchange is refused with `400` and `errorCode: "nonce-stale"`. The nonce only moves if your wallet itself calls `incrementNonce()` on the exchange. After that, client-signed orders on that exchange cannot succeed, and this is terminal today: send orders without a `signature` so Hit signs them for you. A `nonce` field to recover from this is planned.
+
+<Tabs sync={false}>
+<Tab title="TypeScript">
+
+```typescript
+import { privateKeyToAccount } from "viem/accounts";
+
+const EXCHANGE_DOMAIN = { name: "Metawin CTF Exchange", version: "1", chainId: 8453 };
+const EXCHANGE_ADDRESS = "0x71aCeb0c45f4d58a2549Dd21F1aDc8E86d2899EA";
+const NEG_RISK_EXCHANGE_ADDRESS = "0xDf667F94322fEcCa5D56a72Bb21a8a418b5EaC94";
+
+const ORDER_TYPES = {
+  Order: [
+    { name: "salt", type: "uint256" },
+    { name: "maker", type: "address" },
+    { name: "signer", type: "address" },
+    { name: "taker", type: "address" },
+    { name: "tokenId", type: "uint256" },
+    { name: "makerAmount", type: "uint256" },
+    { name: "takerAmount", type: "uint256" },
+    { name: "expiration", type: "uint256" },
+    { name: "nonce", type: "uint256" },
+    { name: "feeRateBps", type: "uint256" },
+    { name: "side", type: "uint8" },
+    { name: "signatureType", type: "uint8" },
+  ],
+} as const;
+
+const account = privateKeyToAccount(process.env.HIT_WALLET_PRIVATE_KEY! as `0x${string}`);
+
+// 1. Your signing identity. Do not pass `user` here.
+const { user } = (await request("GET", "/markets/value")) as { user: `0x${string}` };
+const upgraded = user.toLowerCase() === account.address.toLowerCase();
+const maker = upgraded ? account.address : user;
+const signatureType = upgraded ? 0 : 2;
+
+// 2. The market and its exchange, chosen by the market's negRisk.
+const marketResponse = await fetch(`https://hit.com/api/v1/markets/${process.env.HIT_MARKET_ID!}`);
+if (!marketResponse.ok) {
+  throw new Error(`${marketResponse.status}: ${await marketResponse.text()}`);
+}
+const market = (await marketResponse.json()) as { tokenId1: string; orderFeeRateBps: number; negRisk: boolean };
+const verifyingContract = (market.negRisk ? NEG_RISK_EXCHANGE_ADDRESS : EXCHANGE_ADDRESS) as `0x${string}`;
+
+// 3. Sign the complete order: buy 50 shares of outcome 1 for 31 USDC.
+const order = {
+  salt: BigInt(`0x${randomBytes(32).toString("hex")}`).toString(),
+  taker: "0x0000000000000000000000000000000000000000" as const,
+  tokenId: market.tokenId1,
+  makerAmount: units(31), // USDC
+  takerAmount: units(50), // shares
+  expiration: 0,
+  feeRateBps: market.orderFeeRateBps,
+  side: 0,
+};
+
+const signature = await account.signTypedData({
+  domain: { ...EXCHANGE_DOMAIN, verifyingContract },
+  types: ORDER_TYPES,
+  primaryType: "Order",
+  message: {
+    salt: BigInt(order.salt),
+    maker,
+    signer: account.address,
+    taker: order.taker,
+    tokenId: BigInt(order.tokenId),
+    makerAmount: BigInt(order.makerAmount),
+    takerAmount: BigInt(order.takerAmount),
+    expiration: BigInt(order.expiration),
+    nonce: 0n,
+    feeRateBps: BigInt(order.feeRateBps),
+    side: order.side,
+    signatureType,
+  },
+});
+
+// 4. Submit: the body fields plus signature and orderType. No maker, signer, signatureType or nonce.
+const created = await request("POST", "/orders", { ...order, signature, orderType: "GTC" });
+
+console.log(created);
+```
+
+</Tab>
+
+<Tab title="Python">
+
+```python
+from eth_account import Account
+
+EXCHANGE_DOMAIN = {"name": "Metawin CTF Exchange", "version": "1", "chainId": 8453}
+EXCHANGE_ADDRESS = "0x71aCeb0c45f4d58a2549Dd21F1aDc8E86d2899EA"
+NEG_RISK_EXCHANGE_ADDRESS = "0xDf667F94322fEcCa5D56a72Bb21a8a418b5EaC94"
+
+ORDER_TYPES = {
+    "EIP712Domain": [
+        {"name": "name", "type": "string"},
+        {"name": "version", "type": "string"},
+        {"name": "chainId", "type": "uint256"},
+        {"name": "verifyingContract", "type": "address"},
+    ],
+    "Order": [
+        {"name": "salt", "type": "uint256"},
+        {"name": "maker", "type": "address"},
+        {"name": "signer", "type": "address"},
+        {"name": "taker", "type": "address"},
+        {"name": "tokenId", "type": "uint256"},
+        {"name": "makerAmount", "type": "uint256"},
+        {"name": "takerAmount", "type": "uint256"},
+        {"name": "expiration", "type": "uint256"},
+        {"name": "nonce", "type": "uint256"},
+        {"name": "feeRateBps", "type": "uint256"},
+        {"name": "side", "type": "uint8"},
+        {"name": "signatureType", "type": "uint8"},
+    ],
+}
+
+account = Account.from_key(os.environ["HIT_WALLET_PRIVATE_KEY"])
+
+# 1. Your signing identity. Do not pass `user` here.
+user = request("GET", "/markets/value")["user"]
+upgraded = user.lower() == account.address.lower()
+maker = account.address if upgraded else user
+signature_type = 0 if upgraded else 2
+
+# 2. The market and its exchange, chosen by the market's negRisk.
+market_response = requests.get(f"https://hit.com/api/v1/markets/{os.environ['HIT_MARKET_ID']}", timeout=10)
+market_response.raise_for_status()
+market = market_response.json()
+verifying_contract = NEG_RISK_EXCHANGE_ADDRESS if market["negRisk"] else EXCHANGE_ADDRESS
+
+# 3. Sign the complete order: buy 50 shares of outcome 1 for 31 USDC.
+order = {
+    "salt": str(secrets.randbits(256)),
+    "taker": "0x0000000000000000000000000000000000000000",
+    "tokenId": market["tokenId1"],
+    "makerAmount": units(31),
+    "takerAmount": units(50),
+    "expiration": 0,
+    "feeRateBps": market["orderFeeRateBps"],
+    "side": 0,
+}
+
+signed = Account.sign_typed_data(
+    account.key,
+    full_message={
+        "types": ORDER_TYPES,
+        "primaryType": "Order",
+        "domain": {**EXCHANGE_DOMAIN, "verifyingContract": verifying_contract},
+        "message": {
+            "salt": int(order["salt"]),
+            "maker": maker,
+            "signer": account.address,
+            "taker": order["taker"],
+            "tokenId": int(order["tokenId"]),
+            "makerAmount": int(order["makerAmount"]),
+            "takerAmount": int(order["takerAmount"]),
+            "expiration": order["expiration"],
+            "nonce": 0,
+            "feeRateBps": order["feeRateBps"],
+            "side": order["side"],
+            "signatureType": signature_type,
+        },
+    },
+)
+
+# 4. Submit: the body fields plus signature and orderType. No maker, signer, signatureType or nonce.
+created = request("POST", "/orders", {**order, "signature": "0x" + bytes(signed.signature).hex(), "orderType": "GTC"})
+
+print(created)
+```
+
+</Tab>
+</Tabs>
+
+The examples need `viem` for TypeScript and `eth-account` for Python.
+
 ## Taker Delay
 
 Some markets hold marketable orders for a short delay before matching. An order is marketable when it would match against an order already on the book, which makes it a taker order. Orders that rest on the book without matching are not delayed.
@@ -413,7 +634,7 @@ These endpoints also accept API key authentication:
 | Request | Description |
 | --- | --- |
 | `GET /markets/user-positions` | Current user positions |
-| `GET /markets/value` | Position value for the current user or a supplied proxy wallet |
+| `GET /markets/value` | Position value for the current user, or for the wallet address in `user`. Called without `user`, the returned `user` is the `maker` to sign orders with. A supplied `user` only returns that address's valuation and is not a signing identity |
 | `GET /markets/user-activity` | User activity feed |
 | `GET /markets/traded-count` | Number of markets traded |
 | `GET /markets/redeemable-positions` | Resolved markets with positions you can redeem |
