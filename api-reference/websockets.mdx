@@ -340,7 +340,7 @@ A `crypto-price-connect` whose payload is invalid — not an array, empty, more 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `tokenId` | string | Yes | Outcome token ID. |
-| `proxyAddress` | address string | Yes | Address holding the position: your wallet, or your old wallet for a position held before your account's upgrade. Deprecated. Will be removed in a future release, with notice. |
+| `proxyAddress` | address string | Yes | Your wallet address. Deprecated. Will be removed in a future release, with notice. |
 | `amount` | string | Yes | Updated token amount. |
 | `acquisitionPrice` | number | Yes | Acquisition price. `0` when no cost basis is recorded for the position: read it as unknown, not as free. |
 | `timestamp` | string (date-time) | Yes | Update timestamp. |
@@ -440,5 +440,5 @@ Three gaps make the hash the only reliable link:
 | `event_type` | enum string | Yes | `transaction`. |
 | `txHash` | string | Yes | Transaction hash. |
 | `status` | enum string | Yes | `success` or `failed`. |
-| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position` or `multisend`. The values `proxy_wallet_create`, `proxy_wallet_setup` and `multisend`: Deprecated. Will be removed in a future release, with notice. |
+| `operationType` | enum string | No | `proxy_wallet_create`, `proxy_wallet_setup`, `redeem_position`, `merge_position`, `multisend`, `wallet_recovery`, `wallet_approvals_repair`, `wallet_setup` or `wallet_migration_pull`. The values `proxy_wallet_create` and `proxy_wallet_setup`: Deprecated. Will be removed in a future release, with notice. |
 | `timestamp` | integer | Yes | Emit timestamp in milliseconds. |
