@@ -4,7 +4,7 @@ description: Market lookup, volume and activity endpoint reference
 ---
 
 <Info>
-  Address fields refer to the wallet the user trades from. Fields marked deprecated will be removed in a future release, with notice.
+  Address fields refer to the wallet the user trades from.
 </Info>
 
 ## Get Markets by ID
@@ -159,7 +159,6 @@ Query parameters:
 
 | Query | Type | Required | Description |
 | --- | --- | --- | --- |
-| `proxyAddress` | address string | No | Wallet address filter. Deprecated. Will be removed in a future release, with notice. |
 | `type` | enum string | No | `SPLIT`, `MERGE` or `REDEEM`. |
 | `page` | integer | No | Page number. Default `1`. |
 | `limit` | integer | No | Results per page. Default `10`. |
@@ -168,6 +167,8 @@ Query parameters:
 | `order` | enum string | No | `ASC` or `DESC`. Default `DESC`. |
 
 Response type: `Pagination<Activity>`.
+
+This is the market's activity from every account. For your own activity in a market, use [Get User Activity](/api-reference/portfolio#get-user-activity) with `market`.
 
 ## Market
 
@@ -237,7 +238,6 @@ Response type: `Pagination<Activity>`.
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |
 | `conditionId` | string | Yes | Conditional Tokens condition ID. |
-| `proxy_address` | address string | Yes | Wallet address that made this activity. Deprecated. Will be removed in a future release, with notice. |
 | `outcome1` | string | Yes | Outcome 1 label. |
 | `outcome2` | string | Yes | Outcome 2 label. |
 | `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |
