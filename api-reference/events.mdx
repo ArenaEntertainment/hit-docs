@@ -153,7 +153,7 @@ Response type: `EventUserPositions[]`.
 | `icon` | string | Yes | Event icon URL. |
 | `eventStatus` | enum string | Yes | `DRAFT`, `ACTIVE`, `RESOLVED` or `ENDED`. |
 | `protected` | boolean | Yes | Whether the event is protected. |
-| `single` | boolean | Yes | Whether the event has one market. |
+| `single` | boolean | Yes | Whether the event was created as a single event. A single event has exactly one market; an event with `single` false can also hold one market. |
 | `negRisk` | boolean | Yes | Whether this is a mutually exclusive negative-risk event. |
 | `isDetermined` | boolean | Yes | Whether the event's winning market has been determined. |
 | `winningMarketId` | UUID string or null | No | Winning market UUID for resolved multi-market events. |
@@ -163,8 +163,8 @@ Response type: `EventUserPositions[]`.
 | `liveness` | integer | Yes | UMA liveness period in seconds. |
 | `orderFeeRateBps` | integer | Yes | Active order fee rate in basis points. |
 | `passiveOrderFeeRateBps` | integer | Yes | Passive order fee rate in basis points. |
-| `marketId` | string | Yes | On-chain market ID. |
-| `ancillaryData` | string | Yes | UMA ancillary data. |
+| `marketId` | string or null | No | The event's single on-chain market ID. On a single event (`single` true) it is that market's `marketId`; on a neg-risk event it is the neg-risk market ID its markets share. `null` on an event that is neither (`single` false and not neg-risk, whatever its number of markets; read each market's `marketId` instead) and on an event not yet on chain. |
+| `ancillaryData` | string or null | No | The event's prepared on-chain market ID, the same value as the event's `marketId` when both are set. On a single event (`single` true) that is the market's question text, equal to that market's `ancillaryData`; on a neg-risk event it is the neg-risk market ID, not question text. `null` whenever `marketId` is `null`. |
 | `metadata` | object | No | Optional JSON metadata. |
 | `templateId` | UUID string | No | Template UUID when generated from a template. |
 | `categories` | `Category[]` | No | Event categories. |
@@ -192,7 +192,7 @@ Response type: `EventUserPositions[]`.
 | `icon` | string | Yes | Market icon URL. |
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |
-| `ancillaryData` | string | Yes | UMA ancillary data. |
+| `ancillaryData` | string or null | No | The market's on-chain question text, as `0x`-prefixed hex. On UMA markets it ends with the `,initializer:` suffix and the initializer address, which UMA adds; on price-resolver and direct-resolver markets there is no suffix. `null` until the market is initialized on chain (`isInitialized` false). |
 | `isInitialized` | boolean | Yes | Whether the market has been initialized. |
 | `conditionId` | string | Yes | Conditional Tokens condition ID. |
 | `questionId` | string | Yes | UMA question ID. |
@@ -212,7 +212,7 @@ Response type: `EventUserPositions[]`.
 | `isPaused` | boolean | Yes | Whether the market is paused. |
 | `hidden` | boolean | Yes | Whether the market is hidden from the public event page. |
 | `marketResolvedTo` | string | Yes | Raw resolved outcome value. |
-| `marketId` | string | Yes | On-chain market ID. |
+| `marketId` | string or null | No | On-chain market ID. Equal to `ancillaryData`, except on neg-risk markets (`negRisk` is `true`), where it is the neg-risk market ID. `null` until the market is initialized on chain (`isInitialized` false). |
 | `negRisk` | boolean | Yes | Whether the market uses negative-risk resolution. |
 | `questionFlaggedTimestamp` | integer | Yes | Question-flagged timestamp. |
 | `transactionHash` | string | Yes | Creation or registration transaction hash. |
