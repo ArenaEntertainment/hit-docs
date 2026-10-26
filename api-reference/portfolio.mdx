@@ -4,7 +4,7 @@ description: User position, portfolio value and account activity endpoint refere
 ---
 
 <Info>
-  Address fields refer to the wallet the user trades from. Fields marked deprecated will be removed in a future release, with notice.
+  Address fields refer to the wallet the user trades from.
 </Info>
 
 ## Get User Positions
@@ -257,7 +257,6 @@ Response type: `BatchMergeResponse`.
 | `tokenId1` | string | Yes | Outcome 1 token ID. |
 | `tokenId2` | string | Yes | Outcome 2 token ID. |
 | `conditionId` | string | Yes | Conditional Tokens condition ID. |
-| `proxy_address` | address string | Yes | Wallet address that made this activity. Deprecated. Will be removed in a future release, with notice. |
 | `outcome1` | string | Yes | Outcome 1 label. |
 | `outcome2` | string | Yes | Outcome 2 label. |
 | `type` | enum string | Yes | `BUY`, `SELL`, `SPLIT`, `MERGE` or `REDEEM`. |
