@@ -22,7 +22,6 @@ Hit accepts low-level order payloads built from outcome token amounts.
 | `feeRateBps` | Client-signed only | Must match the market `orderFeeRateBps` |
 | `signature` | Optional | Include for client-signed orders; omit when using server-side session signer |
 | `nonce` | Optional | Client-signed orders only: the nonce the order is signed over. `0` when omitted |
-| `idempotencyKey` | Optional | UUID v4 used to deduplicate repeated submission of the same logical order |
 | `postOnly` | Optional | Maker-only GTC order; rejected if it would cross the book |
 
 Do not send `priceUint`. The server sets it, and the request validator rejects a body that carries it.
@@ -258,7 +257,7 @@ The signed message and the request body are not the same set of fields:
 | `maker`, `signer`, `signatureType` | Yes | No. Sending them returns `400` |
 | `nonce` | Yes | Optional, with the same value. `0` when omitted |
 | `signature` | No | Yes |
-| `orderType`, `postOnly`, `idempotencyKey` | No | Yes |
+| `orderType`, `postOnly` | No | Yes |
 
 The examples add to the `request` and `units` helpers from [Place an Order](#place-an-order). Set `HIT_MARKET_ID` to the market and `HIT_WALLET_PRIVATE_KEY` to the private key of your HIT Wallet. Keep the key secret: anyone who has it controls your funds.
 
