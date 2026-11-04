@@ -112,7 +112,6 @@ Request body type: `CreateOrder`.
 | `nonce` | integer | No | Maker nonce the order is signed over, for an order you sign yourself. `0` when omitted. Sent without `signature`, the request is refused with `400`. After a `nonce-stale` refusal, sign the order again over its `serverNonce` and send that value here. |
 | `orderType` | enum string | Yes | `GTC`, `FOK` or `FAK`. |
 | `postOnly` | boolean | No | Maker-only flag. Valid for GTC only; a crossing post-only order is rejected. Default `false`. |
-| `idempotencyKey` | UUID v4 string | No | Client key for deduplicating repeated submission of the same logical order. |
 
 Do not send `priceUint`. The server sets it, and the request validator rejects a body that carries it.
 
