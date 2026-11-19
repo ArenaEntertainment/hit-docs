@@ -155,7 +155,7 @@ Response type: `CreateBatchOrdersResponse`.
 | `error` | string | No | Error message when unsuccessful. |
 | `serverNonce` | integer | No | On a `nonce-stale` entry, the nonce Hit holds for your wallet on that exchange. If you signed the order, sign it again over this value and send it as `nonce`. An order Hit signed can be re-sent as it is: it can be refused with `nonce-stale` once more, and re-sending it again is still the right answer. |
 
-The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted`, `nonce-stale` and `order-archived`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
+The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted` and `nonce-stale`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
 
 This route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, in which case no order in the batch was created.
 
