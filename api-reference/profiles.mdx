@@ -92,6 +92,8 @@ Both position types include `id`, `market`, optional `eventName`, `isMultiMarket
 
 `ClosedProfilePosition` additionally includes numeric-cent `exit`, USD-string signed `pnl`, and numeric `pnlPct`.
 
+When Hit cannot read the markets of the profile's positions because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Re-send a `503` after the wait the header gives; a `500` is a server fault, not a problem with your request. See [Server Error Changes](/api-reference/server-error-changes).
+
 ## Get Profile Activity
 
 ```text

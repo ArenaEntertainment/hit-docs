@@ -29,6 +29,8 @@ A `tag` request excludes markets that are in draft, markets flagged hidden, and 
 
 Response type: `Market[]`.
 
+When Hit cannot read the markets named by `ids` because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Re-send a `503` after the wait the header gives; a `500` is a server fault. See [Server Error Changes](/api-reference/server-error-changes).
+
 ## Get Market
 
 ```text
@@ -45,7 +47,7 @@ Path parameters:
 
 Response type: `Market`.
 
-When Hit cannot read the market by slug because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Looking a market up by UUID answers a database failure with `500`. Re-send a `503` after the wait the header gives; a `500` is a server fault. Neither means the market does not exist. The order book read, the last trade price read and `POST /api/v1/orders` answer a failed market lookup the same way. `GET /api/v1/price-history` answers `500` with `message: "Failed to fetch price history"`, or the same `503`. `POST /api/v1/orders/batch` does not answer a failed market read with a `500`: the entry carries `code: "check-unavailable"`. See [Server Error Changes](/api-reference/server-error-changes).
+When Hit cannot read the market by slug because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Looking a market up by UUID answers a database failure with `500`. Re-send a `503` after the wait the header gives; a `500` is a server fault. Neither means the market does not exist. Any endpoint that reads a market answers a failed read of it the same way, including the order book read, the last trade price read, `POST /api/v1/orders`, `GET /api/v1/markets?ids=`, `GET /api/v1/markets/{id_or_slug}/holders` with a slug, and the position reads. `GET /api/v1/price-history` answers a failed lookup of the token's market with `500` and `message: "Failed to fetch price history"`, or the same `503`; a failed read of the history itself is a `503` described under [Get Price History](/api-reference/prices#get-price-history). `POST /api/v1/orders/batch` does not answer a failed market read with a `500`: the entry carries `code: "check-unavailable"`. See [Server Error Changes](/api-reference/server-error-changes).
 
 ## Get Top Holders
 
@@ -96,6 +98,8 @@ Response type: `MarketHolders`.
 | `walletShort` | string or null | Yes | Shortened wallet fallback when `name` is `null`; always `null` when `anonymous=true`. |
 | `shares` | number | Yes | Outcome tokens held in display units. |
 | `rank` | integer | Yes | One-based rank within this outcome. |
+
+When Hit cannot read the market by slug because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. A lookup by UUID answers a database failure with `500`. Re-send a `503` after the wait the header gives. See [Server Error Changes](/api-reference/server-error-changes).
 
 ## Get Market Volume
 
