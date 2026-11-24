@@ -1,0 +1,47 @@
+---
+title: Server Error Changes
+description: Trading API responses that will change from a 4xx to a 5xx, and what your client should do
+---
+
+Some failures on Hit's side are answered as if your request was wrong. From **RELEASE DATE TO BE CONFIRMED** they return a `5xx`, or a new per-order code, so your client can tell a fault it should retry from a request it should fix. Until then the current answers apply. Nothing about a successful request changes.
+
+## What will change
+
+### Reading a market
+
+| Endpoint | Now | From the release date |
+| --- | --- | --- |
+| `GET /api/v1/markets/{id_or_slug}` with a slug | `400` with `message: "Error getting market by slug"` when the database failed | `500` with `message: "Internal server error"`, or `503` with `Retry-After: 1` when the server's database connections are all in use |
+| `GET /api/v1/order-book/book` and `GET /api/v1/order-book/last-trade-price`, when the token's market could not be looked up | `400` with a message starting "Error getting" | The same `500` or `503` as above |
+| `POST /api/v1/orders`, when the order's market could not be read | `400` with a message starting "Error getting" | The same `500` or `503` as above |
+| `GET /api/v1/price-history`, when the token's market could not be looked up | `400` with `message: "Error getting market by token id"` | `500` with `message: "Failed to fetch price history"`, or `503` with `Retry-After: 1` when the server's database connections are all in use |
+
+`GET /api/v1/markets/{id_or_slug}` with a UUID already answers `500` when the database fails, and that does not change. `GET /api/v1/orders` and the other order reads are not part of this change.
+
+### Orders
+
+| Endpoint | Now | From the release date |
+| --- | --- | --- |
+| `POST /api/v1/orders/batch`, an entry Hit could not check because a read failed on its side, such as the market read or the wallet-code read, or any other server-side fault | `code: "bad-request"` or `"wallet-code-changed"` inside the `201`, with the raw text of the failure | `code: "check-unavailable"` inside the `201` |
+| `POST /api/v1/orders` for a wallet that was refused before, when its code cannot be read | `400` with `errorCode: "wallet-code-changed"` | `503` with `errorCode: "wallet-code-unavailable"` and `Retry-After: 1` |
+| `POST /api/v1/orders` for a wallet that was refused before, when the account has no wallet address | `400` with `errorCode: "wallet-code-changed"` | `500` with `message: "Internal server error"`. Re-sending cannot clear it: report it. |
+
+### Platform configuration and API keys
+
+| Endpoint | Now | From the release date |
+| --- | --- | --- |
+| `POST /api/v1/trading/auth/api-key` when the signing provider rate-limits, is down or times out | `400` with "Signature required. Session signer not granted." or the provider's own message | `503` with `error: "SIGNING_UNAVAILABLE"` and a `Retry-After` header |
+| `POST /api/v1/orders`, `POST /api/v1/trading/auth/api-key` and other endpoints, when Hit's own platform configuration is missing | `404` with "Entity not found." | `500` with `message: "Internal server error"` |
+
+## What your client should do
+
+- **`503` on `POST /api/v1/orders` or `POST /api/v1/trading/auth/api-key`:** nothing was created. Wait the number of seconds in the `Retry-After` header, then send the same request again. On a read endpoint, wait and send it again.
+- **`POST /api/v1/trading/auth/api-key` is limited to 5 requests per hour.** Each retry of its `503` counts towards that limit, and once it is spent the route answers `429`. Retry it a few times at most, then wait.
+- **`500`:** treat it as a fault on Hit's side. The request is not what is wrong, so do not change it. A `500` from a temporary database fault can succeed when you send it again, so retrying with a back-off is reasonable. If it keeps happening, report it to Hit with the time and the `path` from the response body.
+- **`code: "check-unavailable"` on a batch entry:** nothing was created for that entry. Send that order again, on its own or in the next batch. The entry's `error` text is a short description, or `Internal server error` when the cause is not one it can name, so do not rely on it to say which read failed. A re-send often clears it, but not always: if the same order keeps coming back `check-unavailable`, report it to Hit.
+- **`errorCode: "wallet-code-unavailable"`:** nothing was created. The body is `statusCode`, `message`, `errorCode` and `retryAfterSeconds`, with no `error` field, and `message` is "Your wallet could not be checked just now. Send the order again." Branch on `errorCode`, wait, and re-send the identical order. A `400` with `errorCode: "wallet-code-changed"` stays as it is today: it means your wallet's code did change.
+- **`error: "SIGNING_UNAVAILABLE"` from `POST /api/v1/trading/auth/api-key`:** no key was created. The `message` is "API key signing is rate limited; retry the request." or "API key signing is temporarily unavailable; retry the request." Wait for `Retry-After`, then request the key again. A user with no session signer still gets the same `400` as today.
+
+If your client treats every `4xx` as "do not retry" and every `400` as "fix the request", update it to retry a `503` and to alert on a `500`. If it matches on the old messages, "Error getting …" or "Entity not found.", it will not see them for these failures after the release date.
+
+See also [Errors](/api-reference/introduction#errors) and [Admission Errors](/api-reference/orders#admission-errors).
