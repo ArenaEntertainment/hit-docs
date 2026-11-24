@@ -99,7 +99,7 @@ Response type: `MarketHolders`.
 | `shares` | number | Yes | Outcome tokens held in display units. |
 | `rank` | integer | Yes | One-based rank within this outcome. |
 
-When Hit cannot read the market by slug because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. A lookup by UUID answers a database failure with `500`. Re-send a `503` after the wait the header gives. See [Server Error Changes](/api-reference/server-error-changes).
+When Hit cannot read the market by slug because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. A lookup by UUID answers a database failure the same way, with `500` or the same `503`. Re-send a `503` after the wait the header gives. See [Server Error Changes](/api-reference/server-error-changes).
 
 ## Get Market Volume
 

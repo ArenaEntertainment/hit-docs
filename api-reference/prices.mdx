@@ -37,6 +37,8 @@ Response type: `OrderBook`.
 | `size` | string | Yes | Available size at the level. |
 | `numOrders` | integer | No | Number of resting orders at the level. Present on the REST order book response; it may be absent from WebSocket snapshots. |
 
+If Hit cannot look up the token's market because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. See [Server Error Changes](/api-reference/server-error-changes).
+
 ## Get Last Trade Price
 
 ```text
