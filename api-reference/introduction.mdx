@@ -116,4 +116,4 @@ Errors use standard HTTP status codes with a JSON body when a message is availab
 | `message` | string or string[] | Yes | Error message or validation messages. |
 | `error` | string | No | HTTP error label. |
 
-A `500` is a fault on Hit's side: its body carries `message: "Internal server error"` and none of the cause, and re-sending the same request is not expected to help. A `503` with a `Retry-After` header means try again after that many seconds. For where these answers replaced a `400` or `404`, see [Server Error Changes](/api-reference/server-error-changes).
+A `500` is a fault on Hit's side, not a problem with your request. Its body does not carry the cause of a database or configuration fault, and the message differs by route. A `500` from a temporary database fault can succeed when you send the request again, so retrying with a back-off is reasonable. If it keeps happening, report it to Hit with the time and the `path` from the response body. A `503` with a `Retry-After` header means try again after that many seconds. For where these answers replaced a `400` or `404`, see [Server Error Changes](/api-reference/server-error-changes).
