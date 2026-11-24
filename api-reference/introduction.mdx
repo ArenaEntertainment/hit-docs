@@ -115,3 +115,5 @@ Errors use standard HTTP status codes with a JSON body when a message is availab
 | `statusCode` | integer | No | HTTP status code. |
 | `message` | string or string[] | Yes | Error message or validation messages. |
 | `error` | string | No | HTTP error label. |
+
+A `500` is a fault on Hit's side: its body carries `message: "Internal server error"` and none of the cause, and re-sending the same request is not expected to help. A `503` with a `Retry-After` header means try again after that many seconds. For where these answers replaced a `400` or `404`, see [Server Error Changes](/api-reference/server-error-changes).

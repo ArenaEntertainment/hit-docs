@@ -45,6 +45,8 @@ Path parameters:
 
 Response type: `Market`.
 
+When Hit cannot read the market because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Re-send a `503` after the wait the header gives; a `500` is a server fault. Neither means the market does not exist. The same answers apply to any other endpoint that reads a market, such as the order book read and `POST /api/v1/orders`. See [Server Error Changes](/api-reference/server-error-changes).
+
 ## Get Top Holders
 
 ```text
