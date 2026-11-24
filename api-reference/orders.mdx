@@ -347,7 +347,7 @@ A `503` whose `error` is `CREDENTIAL_UNVERIFIABLE` is not one of these. Your API
 | --- | --- | --- | --- |
 | `statusCode` | integer | Yes | `503`. |
 | `error` | enum string | No | `SIGNING_UNAVAILABLE` or `ORDER_ADMISSION_UNAVAILABLE` on those two responses, where it is the discriminator; read it before `errorCode`. Absent on a `503` with `errorCode: "wallet-code-unavailable"` and on the database-connection `503`. |
-| `errorCode` | enum string | No | Present when `error` is `ORDER_ADMISSION_UNAVAILABLE` (one of the codes below), and as `wallet-code-unavailable` on the `503` that has no `error`. Absent otherwise. |
+| `errorCode` | enum string | No | Present when `error` is `ORDER_ADMISSION_UNAVAILABLE` (one of the codes below), and as `wallet-code-unavailable` on the wallet-code `503`, which has no `error`. Absent on every other response, including the database-connection `503`. |
 | `message` | string | Yes | Error message. |
 | `retryAfterSeconds` | integer | No | Seconds to wait before retrying. Repeats the `Retry-After` header. Present on `SIGNING_UNAVAILABLE`, `ORDER_ADMISSION_UNAVAILABLE` and `wallet-code-unavailable`; absent on the database-connection `503`, which carries the header only. |
 
