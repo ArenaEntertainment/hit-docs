@@ -30,7 +30,7 @@ Response type: `PublicProfileSummary`.
 | `rewardsCount` | integer | Yes | Number of rewards earned. |
 | `allTimePnl` | string | Yes | Signed all-time profit or loss in USD. |
 
-If Hit cannot read the source of one of these figures because of a fault on its side, the summary still answers `200` and that figure is zero, for example `positionsValue` of `"0.00"` when the markets of the positions could not be read. The other figures are unaffected.
+If Hit cannot read the source of one of these figures because of a fault on its side, the summary still answers `200` and that figure is zero, for example `positionsValue` of `"0.00"` when the markets of the positions could not be read. A figure is zeroed together with the others read from the same source: a failed profit-and-loss read zeroes both `allTimePnl` and `biggestWin`, and a failed rewards read zeroes both `rewardsUsd` and `rewardsCount`. Figures from other sources are unaffected.
 
 ## Get P/L History
 
