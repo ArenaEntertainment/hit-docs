@@ -122,6 +122,8 @@ This endpoint returns `503` when the order could not be signed, submitted or adm
 | Status | Body | Meaning |
 | --- | --- | --- |
 | `400` | `errorCode: "nonce-stale"`, `serverNonce` | The order was signed over a nonce other than the one Hit holds for your wallet on that exchange, which `serverNonce` gives. If you signed it, sign it again over `serverNonce` and send that value as `nonce`; see [Place a Client-Signed Order](/developers/orders#place-a-client-signed-order). If Hit signed it, re-send it as it is. |
+| `503` | `errorCode: "wallet-code-unavailable"`, `retryAfterSeconds` | Hit could not read your wallet's code, so it could neither admit nor refuse the order. Nothing was created. Re-send the identical order after the `Retry-After` wait. See [Admission Errors](#admission-errors). |
+| `500` or `503` | `message: "Internal server error"` or `"Service temporarily unavailable"` | Hit could not read the order's market or the platform configuration it needs. A `503` carries `Retry-After: 1`; re-send after the wait. A `500` is a fault on Hit's side; retrying with a back-off is reasonable, and if it keeps happening, report it to Hit with the time and `path`. |
 
 ## Create Batch Orders
 
@@ -156,6 +158,8 @@ Response type: `CreateBatchOrdersResponse`.
 | `serverNonce` | integer | No | On a `nonce-stale` entry, the nonce Hit holds for your wallet on that exchange. If you signed the order, sign it again over this value and send it as `nonce`. An order Hit signed can be re-sent as it is: it can be refused with `nonce-stale` once more, and re-sending it again is still the right answer. |
 
 The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted` and `nonce-stale`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
+
+An entry Hit could not check because of a fault on its side, such as a failed read of its market or of your wallet's code, carries `code: "check-unavailable"`. Nothing was created for it, so send that order again. Its `error` text may name the read that failed, but it can also be `Internal server error`, so do not rely on it. A re-send often clears the entry, but not always: if the same order keeps coming back `check-unavailable`, report it to Hit.
 
 This route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, in which case no order in the batch was created.
 
@@ -335,19 +339,23 @@ When `total=true`, the count is bounded and the response can include `totalCappe
 
 ## Admission Errors
 
-`POST /api/v1/orders` answers `503` when the order could not be signed, submitted or admitted. Every `503` on that endpoint means nothing was created, so re-sending the identical body cannot duplicate the order. Each of these responses carries a `Retry-After` header and repeats the same figure in the body as `retryAfterSeconds`.
+`POST /api/v1/orders` answers `503` when the order could not be signed, submitted or admitted. Every `503` on that endpoint means nothing was created, so re-sending the identical body cannot duplicate the order. Each `SIGNING_UNAVAILABLE` and `ORDER_ADMISSION_UNAVAILABLE` response carries a `Retry-After` header and repeats the same figure in the body as `retryAfterSeconds`. A `503` with no `error` field is a different shape, described below, and not every one carries `retryAfterSeconds`.
 
 A `503` whose `error` is `CREDENTIAL_UNVERIFIABLE` is not one of these. Your API key or JWT could not be checked, so the order was not attempted. Its body has `statusCode`, `error` and `message` only, with no `errorCode` and no `retryAfterSeconds`, and it carries no `Retry-After` header; see [Authentication](/api-reference/authentication).
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `statusCode` | integer | Yes | `503`. |
-| `error` | enum string | Yes | `SIGNING_UNAVAILABLE` or `ORDER_ADMISSION_UNAVAILABLE`. This is the discriminator; read it before `errorCode`. |
-| `errorCode` | enum string | No | Present only when `error` is `ORDER_ADMISSION_UNAVAILABLE`. |
+| `error` | enum string | No | `SIGNING_UNAVAILABLE` or `ORDER_ADMISSION_UNAVAILABLE` on those two responses, where it is the discriminator; read it before `errorCode`. Absent on a `503` with `errorCode: "wallet-code-unavailable"` and on the database-connection `503`. |
+| `errorCode` | enum string | No | Present when `error` is `ORDER_ADMISSION_UNAVAILABLE` (one of the codes below), and as `wallet-code-unavailable` on the wallet-code `503`, which has no `error`. Absent on every other response, including the database-connection `503`. |
 | `message` | string | Yes | Error message. |
-| `retryAfterSeconds` | integer | Yes | Seconds to wait before retrying. Repeats the `Retry-After` header. |
+| `retryAfterSeconds` | integer | No | Seconds to wait before retrying. Repeats the `Retry-After` header. Present on `SIGNING_UNAVAILABLE`, `ORDER_ADMISSION_UNAVAILABLE` and `wallet-code-unavailable`; absent on the database-connection `503`, which carries the header only. |
 
 `SIGNING_UNAVAILABLE` carries no `errorCode`. It has four causes: the signing provider being unavailable, rate-limiting Hit or having no slot in Hit's signing-admission queue; the request budget being exhausted before the order could be submitted; the duplicate guard's store being unavailable; and, on `POST /api/v1/orders/batch` only, the locking infrastructure being unavailable. Three of those four — the request budget, the duplicate guard's store, and the batch locking infrastructure — reach orders you signed yourself, so this status is not limited to orders Hit signs for you. Every batch takes its per-account lock whether or not anything in it needs signing.
+
+A `503` with `errorCode: "wallet-code-unavailable"` is a third shape on `POST /api/v1/orders`. It has no `error` field, so branch on `errorCode`. Its body is `statusCode`, `message`, `errorCode` and `retryAfterSeconds`, with `message: "Your wallet could not be checked just now. Send the order again."` and a `Retry-After: 1` header. It means Hit could not read your wallet's code and so could not tell whether the order is allowed. Nothing was created, so re-send the identical body. A `400` with `errorCode: "wallet-code-changed"` is a different answer and is unchanged: it means your wallet's code did change.
+
+The fourth shape is the `503` Hit answers when a database connection could not be had in time, or the order service could not take the command. Its `message` is "Service temporarily unavailable", with a `Retry-After: 1` header and no `error`, `errorCode` or `retryAfterSeconds`. Nothing was created, so re-send the identical body after the wait.
 
 `ORDER_ADMISSION_UNAVAILABLE` carries an `errorCode`:
 

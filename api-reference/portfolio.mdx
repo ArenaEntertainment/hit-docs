@@ -38,6 +38,8 @@ Response type: `UserPositionsResponse`.
 | `total` | integer | Yes | Total matching positions. |
 | `data` | `UserPosition[]` | Yes | User positions. |
 
+When Hit cannot read the markets of your positions because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Re-send a `503` after the wait the header gives; a `500` is a server fault, not a problem with your request. See [Server Error Changes](/api-reference/server-error-changes).
+
 ## Get Position Value
 
 ```text
@@ -59,6 +61,8 @@ Response type: `UserPositionValue`.
 | --- | --- | --- | --- |
 | `user` | address string | Yes | Wallet address used for the calculation. |
 | `value` | number | Yes | Total position value in USD. |
+
+When Hit cannot read the markets of the positions being valued because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. Re-send a `503` after the wait the header gives; a `500` is a server fault, not a problem with your request. See [Server Error Changes](/api-reference/server-error-changes).
 
 ## Get User Activity
 

@@ -37,6 +37,8 @@ Response type: `OrderBook`.
 | `size` | string | Yes | Available size at the level. |
 | `numOrders` | integer | No | Number of resting orders at the level. Present on the REST order book response; it may be absent from WebSocket snapshots. |
 
+If Hit cannot look up the token's market because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. See [Server Error Changes](/api-reference/server-error-changes).
+
 ## Get Last Trade Price
 
 ```text
@@ -57,6 +59,8 @@ Response type: `LastTradePrice`.
 | --- | --- | --- | --- |
 | `price` | string | Yes | Last traded price. |
 | `side` | enum string | Yes | `buy` or `sell`. |
+
+If Hit cannot look up the token's market because of a fault on its side, this endpoint answers `500` with `message: "Internal server error"`, or `503` with a `Retry-After: 1` header when the server's database connections are all in use. See [Server Error Changes](/api-reference/server-error-changes).
 
 ## Get Price History
 
@@ -97,3 +101,5 @@ Response type: `PriceHistoryResponse`.
 | --- | --- | --- | --- |
 | `t` | integer | Yes | Unix timestamp in seconds. |
 | `p` | string | Yes | Price value. |
+
+If Hit cannot read the price history itself because of a fault on its side, this endpoint answers `503` with `message: "Price history could not be read."`. If Hit cannot look up the token's market, or fails in a way it does not name, it answers `500` with `message: "Failed to fetch price history"`; when the server's database connections are all in use at that lookup, it answers `503` with `message: "Service temporarily unavailable"` and a `Retry-After: 1` header. A `500` is a fault on Hit's side, not a problem with your request. See [Server Error Changes](/api-reference/server-error-changes).
