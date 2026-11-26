@@ -637,4 +637,8 @@ These endpoints also accept API key authentication:
 | `POST /markets/redeem-positions/batch` | Redeem one or more resolved market positions |
 | `GET /markets/mergeable-positions` | Active markets where you hold both outcome legs |
 | `POST /markets/merge-positions/batch` | Merge one or more complete Yes/No sets back into collateral |
+| `POST /wallet/convert-positions` | Convert NO positions across the markets of one neg-risk event |
+| `POST /wallet/merge-yes-set` | Merge the YES set of a neg-risk event back into USDC |
+| `POST /wallet/split-yes-set` | Split USDC into the YES set of a neg-risk event |
+| `POST /wallet/convert-yes-to-no` | Turn held YES positions of a neg-risk event into NO positions of chosen markets |
 | `GET /orders/events` | Active order book events across the platform, not scoped to you |

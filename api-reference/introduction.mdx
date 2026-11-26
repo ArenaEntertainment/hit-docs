@@ -83,6 +83,8 @@ Per-minute limits on the order routes, and what a verified key gets:
 
 Key management is per hour: creating a key is 5, deactivating one is 10.
 
+On `POST /wallet/split-yes-set` and `POST /wallet/convert-yes-to-no` a verified key gets a bucket of 30, refilled at an even rate that `X-RateLimit-Reset` reveals, because each request signs a delegation. See [Neg-Risk Position Actions](/api-reference/portfolio#neg-risk-position-actions).
+
 On an allowed request you get `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
 
 On a rejected request you get `429` with `X-RateLimit-Limit`, `X-RateLimit-Remaining: 0`, `Retry-After`
