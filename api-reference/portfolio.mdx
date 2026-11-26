@@ -221,6 +221,7 @@ Common behaviour:
 - A `400` with `errorCode: "wallet-code-changed"` (an `errorCode`, not a `code`) means your wallet's code is no longer the one Hit set up. It is the same answer that [order admission](/api-reference/orders#admission-errors) gives.
 - A `400` with `message: "Signature required. Session signer not granted."` or `"Signature required. No Privy account found."` means Hit has no permission to sign for your wallet. A `422` `not_broadcast` body does not name its cause, and one that repeats when you resend can mean the session signer is not granted. Sending the request again does not clear that until the wallet is connected in the app again.
 - Insufficient token holdings are refused with `400` before anything is signed.
+- Rate limit: Split YES Set and Convert YES to NO sign a delegation on every request, so a verified API key gets a bucket of 30 requests on each, refilled over the default rate-limit window. `X-RateLimit-Limit` shows the capacity. Convert Positions and Merge YES Set give a key the usual verified-key limit.
 
 Refusals every route can return:
 
