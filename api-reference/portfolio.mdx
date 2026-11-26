@@ -214,12 +214,12 @@ These four routes act on your positions in a neg-risk event. Each one submits a 
 
 Common behaviour:
 
-- `amount` is a positive integer string in raw units, with no leading zeros, at most 78 digits and no larger than the uint256 maximum. It is the amount of each outcome token the action moves; the USDC figures are under each route.
+- `amount` is a positive integer string in raw units, with no leading zeros, at most 78 digits and no larger than the uint256 maximum. It is the amount of each outcome token the action moves; the USDC figures, where there are any, are under each route.
 - A body with a malformed field, or with a property the route does not declare, is refused with a generic `400` that has no `code`.
 - A wallet with no address is refused before anything is read or signed.
-- An `eventId` that is not a neg-risk event, or one whose questions are not all prepared, is refused with `400` and no `code`. So is a `marketIds` entry on `convert-positions` that is not a prepared neg-risk question.
+- An `eventId` that is not a neg-risk event Hit can act on is refused with `400` and no `code`: for example one Hit's records do not fully match on chain, or one whose every market has been reported NO. So is a `marketIds` entry on `convert-positions` that is not a prepared neg-risk question.
 - A `400` with `errorCode: "wallet-code-changed"` (an `errorCode`, not a `code`) means your wallet's code is no longer the one Hit set up. It is the same answer that [order admission](/api-reference/orders#admission-errors) gives.
-- A `400` with `message: "Signature required. Session signer not granted."` or `"Signature required. No Privy account found."`, or a `422` `not_broadcast` caused by the session signer not being granted, means Hit has no permission to sign for your wallet. Sending the request again does not succeed until the wallet is connected in the app again.
+- A `400` with `message: "Signature required. Session signer not granted."` or `"Signature required. No Privy account found."`, means Hit has no permission to sign for your wallet. A `422` `not_broadcast` body does not name its cause, and one that repeats when you resend can mean the session signer is not granted. Sending the request again does not clear that until the wallet is connected in the app again.
 - Insufficient token holdings are refused with `400` before anything is signed.
 
 Refusals every route can return:
@@ -229,7 +229,7 @@ Refusals every route can return:
 | `400` | `would_revert` | The simulation of the action reverted, so nothing was sent. | Sending the same request again normally fails the same way. |
 | `409` | `outcome_unknown` | The transaction may have been sent. | Do not repeat the request without checking the receipt. |
 | `409` | `in_flight` | Another action for your wallet, or a redemption that may still land, is in progress. Nothing was sent. | Do not repeat the request without checking the receipt of the earlier action. |
-| `422` | `not_broadcast` | The action was refused before the send, for a reason with no code of its own. Nothing was sent. | The same request can be sent again, except when the cause is the session signer not being granted (see above). |
+| `422` | `not_broadcast` | The action was refused before the send, for a reason with no code of its own. Nothing was sent. | The same request can be sent again. The body does not name the cause; if it repeats, see the session signer note above. |
 | `422` | `too_large_for_one_transaction` | The action needs more gas than one transaction may use. Nothing was sent. | The same request is refused again. |
 | `503` | `yes_set_chain_unavailable` | The chain state the action depends on could not be read. Nothing was signed or sent. | The request can be sent again. It carries no `Retry-After`. |
 
@@ -276,7 +276,7 @@ POST /api/v1/wallet/merge-yes-set
 
 **Authentication:** `API key HMAC`
 
-Merges `amount` of every YES token of a neg-risk event that has not been reported NO back into USDC. You must hold at least `amount` of each of those YES tokens.
+Merges `amount` of every YES token of a neg-risk event that has not been reported NO back into USDC, which returns `amount` USDC. You must hold at least `amount` of each of those YES tokens.
 
 Request body:
 
