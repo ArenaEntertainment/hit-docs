@@ -243,7 +243,7 @@ POST /api/v1/wallet/convert-positions
 
 **Authentication:** `API key HMAC`
 
-Converts your NO positions in one or more markets of one neg-risk event. The markets must all belong to the same neg-risk event, and you must hold at least `amount` of the NO token of every selected market. You receive `(marketIds.length - 1) * amount` USDC and `amount` of the YES token of every other market of the event, including markets flagged `hidden`. With one market you receive no USDC.
+Converts your NO positions in one or more markets of one neg-risk event. The markets must all belong to the same neg-risk event, and you must hold at least `amount` of the NO token of every selected market. You receive `(marketIds.length - 1) * amount` USDC and `amount` of the YES token of every other market of the event prepared on chain, including markets flagged `hidden`. With one market you receive no USDC.
 
 Request body:
 
@@ -276,7 +276,7 @@ POST /api/v1/wallet/merge-yes-set
 
 **Authentication:** `API key HMAC`
 
-Merges `amount` of every YES token of a neg-risk event that has not been reported NO, including markets flagged `hidden`, back into USDC, which returns `amount` USDC. You must hold at least `amount` of each of those YES tokens.
+Merges `amount` of the YES token of every market of a neg-risk event that has been prepared on chain and not reported NO, including markets flagged `hidden`, back into USDC, which returns `amount` USDC. You must hold at least `amount` of each of those YES tokens.
 
 Request body:
 
@@ -310,7 +310,7 @@ POST /api/v1/wallet/split-yes-set
 
 **Authentication:** `API key HMAC`
 
-Splits `amount` of USDC into `amount` of every YES token of a neg-risk event that has not been reported NO, including markets flagged `hidden`. Your wallet must hold at least `amount` of USDC.
+Splits `amount` of USDC into `amount` of the YES token of every market of a neg-risk event that has been prepared on chain and not reported NO, including markets flagged `hidden`. Your wallet must hold at least `amount` of USDC.
 
 Request body:
 
@@ -346,7 +346,7 @@ POST /api/v1/wallet/convert-yes-to-no
 
 **Authentication:** `API key HMAC`
 
-Turns the YES positions you hold in a neg-risk event into NO positions of the markets you choose. With one target, your YES set becomes NO of that market. With several targets, the action also spends USDC. Your wallet must hold `targetMarketIds.length * amount` of USDC, which is also what Hit approves, and the net USDC spent is `(targetMarketIds.length - 1) * amount`, so one target spends none, net. The YES set is every market of the event not reported NO, including markets flagged `hidden`. You must hold at least `amount` of the YES token of every market in the YES set that is not a target, and the targets must be fewer than the markets in the YES set.
+Turns the YES positions you hold in a neg-risk event into NO positions of the markets you choose. With one target, your YES set becomes NO of that market. With several targets, the action also spends USDC. Your wallet must hold `targetMarketIds.length * amount` of USDC, which is also what Hit approves, and the net USDC spent is `(targetMarketIds.length - 1) * amount`, so one target spends none, net. The YES set is every market of the event prepared on chain and not reported NO, including markets flagged `hidden`. You must hold at least `amount` of the YES token of every market in the YES set that is not a target, and the targets must be fewer than the markets in the YES set.
 
 Request body:
 
