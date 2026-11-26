@@ -124,6 +124,9 @@ This endpoint returns `503` when the order could not be signed, submitted or adm
 | `400` | `errorCode: "nonce-stale"`, `serverNonce` | The order was signed over a nonce other than the one Hit holds for your wallet on that exchange, which `serverNonce` gives. If you signed it, sign it again over `serverNonce` and send that value as `nonce`; see [Place a Client-Signed Order](/developers/orders#place-a-client-signed-order). If Hit signed it, re-send it as it is. |
 | `503` | `errorCode: "wallet-code-unavailable"`, `retryAfterSeconds` | Hit could not read your wallet's code, so it could neither admit nor refuse the order. Nothing was created. Re-send the identical order after the `Retry-After` wait. See [Admission Errors](#admission-errors). |
 | `500` or `503` | `message: "Internal server error"` or `"Service temporarily unavailable"` | Hit could not read the order's market or the platform configuration it needs. A `503` carries `Retry-After: 1`; re-send after the wait. A `500` is a fault on Hit's side; retrying with a back-off is reasonable, and if it keeps happening, report it to Hit with the time and `path`. |
+| `408` | `error: "Request Timeout"` | The order may or may not have been created: its answer did not come back in time, the connection it went out on was lost, or Hit could not confirm whether it recorded the order. Re-send the identical body, with the same `salt`. If the order exists, you get `201` with it; if it does not, it is created. Do not rebuild the order with a new `salt`, which makes a second order. |
+
+Sending the identical body again within 24 hours of placing an order returns that order and creates nothing. The `201` carries the order's `status` now, not the status it was created with. That can be any status, including `CANCELLED`, `EXECUTED` or `REJECTED`: on a repeat, a `201` means the order exists, not that it is resting. Past 24 hours, re-sending the body can create a new order. If the re-send itself gets an answer that says to retry, such as a `408` or a `503`, that answer is about that send only: send the identical body again until it succeeds or is refused for a reason that will not change on a retry.
 
 ## Create Batch Orders
 
@@ -153,6 +156,7 @@ Response type: `CreateBatchOrdersResponse`.
 | `success` | boolean | Yes | Whether that order was created. |
 | `orderId` | UUID string | No | Created order UUID when successful. |
 | `hash` | string | No | EIP-712 hash of the created order when `success` is true, lowercase `0x`-prefixed. The same value the order's WebSocket events and `GET /orders` carry. If you signed the order yourself, compare it with the order you submitted at `index`. |
+| `status` | string | No | The order's status when `success` is true, as `POST /orders` reports it. On a repeat of an order that already exists, its status now. |
 | `code` | string | No | Machine-readable reason when unsuccessful. |
 | `error` | string | No | Error message when unsuccessful. |
 | `serverNonce` | integer | No | On a `nonce-stale` entry, the nonce Hit holds for your wallet on that exchange. If you signed the order, sign it again over this value and send it as `nonce`. An order Hit signed can be re-sent as it is: it can be refused with `nonce-stale` once more, and re-sending it again is still the right answer. |
@@ -160,6 +164,10 @@ Response type: `CreateBatchOrdersResponse`.
 The six `errorCode` values listed under [Admission Errors](#admission-errors) arrive on this route as an entry's `code` inside a normal `201`, with no `Retry-After` header, because other entries in the same request may have been created. The `code` set is open-ended: it is whatever the venue supplies for that entry, plus local fallbacks including `bad-request`, `internal-error`, `not-attempted` and `nonce-stale`. Do not assume the set is closed; treat an unrecognised `code` the way you treat `internal-error`.
 
 An entry Hit could not check because of a fault on its side, such as a failed read of its market or of your wallet's code, carries `code: "check-unavailable"`. Nothing was created for it, so send that order again. Its `error` text may name the read that failed, but it can also be `Internal server error`, so do not rely on it. A re-send often clears the entry, but not always: if the same order keeps coming back `check-unavailable`, report it to Hit.
+
+An entry with `code: "unknown"` may have been created: Hit could not confirm whether it recorded the order. Send that entry again, identical and with the same `salt`; its `error` text asks you to read the order back, and the re-send is how you do that. If the order exists, the entry comes back `success: true` with its `orderId`; if it does not, it is created. Do not rebuild the order with a new `salt`, which makes a second order. If the re-send is itself answered `unknown`, `engine-busy` or another code that says to retry, that answer is about that send only, so send the entry again. A request-level `408` means the same for every entry in the batch: re-send the identical body.
+
+Sending an entry again within 24 hours of placing its order returns that order and creates nothing. The entry is `success: true` with the order's `orderId` and its `status` now, which can be any status, including `CANCELLED`, `EXECUTED` or `REJECTED`. On a repeat, `success: true` means the order exists, not that it is resting.
 
 This route can still answer a request-level `503` with `error: "SIGNING_UNAVAILABLE"`, in which case no order in the batch was created.
 
