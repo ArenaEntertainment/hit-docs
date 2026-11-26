@@ -214,9 +214,12 @@ These four routes act on your positions in a neg-risk event. Each one submits a 
 
 Common behaviour:
 
-- `amount` is a positive integer string in raw token units, with no leading zeros and at most 78 digits. It applies to each token the action moves, not to a total.
+- `amount` is a positive integer string in raw units, with no leading zeros, at most 78 digits and no larger than the uint256 maximum. It is the amount of each outcome token the action moves; the USDC figures are under each route.
 - A body with a malformed field, or with a property the route does not declare, is refused with a generic `400` that has no `code`.
 - A wallet with no address is refused before anything is read or signed.
+- An `eventId` that is not a neg-risk event, or one whose questions are not all prepared, is refused with `400` and no `code`. So is a `marketIds` entry on `convert-positions` that is not a prepared neg-risk question.
+- A `400` with `errorCode: "wallet-code-changed"` (an `errorCode`, not a `code`) means your wallet's code is no longer the one Hit set up. It is the same answer that [order admission](/api-reference/orders#admission-errors) gives.
+- A `400` with `message: "Signature required. Session signer not granted."` or `"Signature required. No Privy account found."`, or a `422` `not_broadcast` caused by the session signer not being granted, means Hit has no permission to sign for your wallet. Sending the request again does not succeed until the wallet is connected in the app again.
 - Insufficient token holdings are refused with `400` before anything is signed.
 
 Refusals every route can return:
@@ -226,9 +229,9 @@ Refusals every route can return:
 | `400` | `would_revert` | The simulation of the action reverted, so nothing was sent. | Sending the same request again normally fails the same way. |
 | `409` | `outcome_unknown` | The transaction may have been sent. | Do not repeat the request without checking the receipt. |
 | `409` | `in_flight` | Another action for your wallet, or a redemption that may still land, is in progress. Nothing was sent. | Do not repeat the request without checking the receipt of the earlier action. |
-| `422` | `not_broadcast` | The action was refused before the send, for a reason with no code of its own. Nothing was sent. | The same request can be sent again. |
+| `422` | `not_broadcast` | The action was refused before the send, for a reason with no code of its own. Nothing was sent. | The same request can be sent again, except when the cause is the session signer not being granted (see above). |
 | `422` | `too_large_for_one_transaction` | The action needs more gas than one transaction may use. Nothing was sent. | The same request is refused again. |
-| `503` | `yes_set_chain_unavailable` | The chain state the action depends on could not be read. Nothing was signed or sent. | The request can be sent again. |
+| `503` | `yes_set_chain_unavailable` | The chain state the action depends on could not be read. Nothing was signed or sent. | The request can be sent again. It carries no `Retry-After`. |
 
 The refusals listed under each route are in addition to these.
 
@@ -240,7 +243,7 @@ POST /api/v1/wallet/convert-positions
 
 **Authentication:** `API key HMAC`
 
-Converts your NO positions in several markets of one neg-risk event. The markets must all belong to the same neg-risk event, and you must hold at least `amount` of the NO token of every selected market.
+Converts your NO positions in one or more markets of one neg-risk event. The markets must all belong to the same neg-risk event, and you must hold at least `amount` of the NO token of every selected market.
 
 Request body:
 
@@ -333,7 +336,7 @@ Refusals specific to this route:
 | --- | --- | --- |
 | `400` | `yes_set_actions_disabled` | The YES-set actions are switched off. |
 | `400` | `insufficient_usdc` | Your wallet holds less USDC than `amount`. |
-| `503` | `usdc_unavailable` | Your USDC balance could not be read. Nothing was signed or sent, so the request can be sent again. |
+| `503` | `usdc_unavailable` | Your USDC balance could not be read. Nothing was signed or sent, so the request can be sent again. It carries no `Retry-After`. |
 
 ### Convert YES to NO
 
@@ -343,7 +346,7 @@ POST /api/v1/wallet/convert-yes-to-no
 
 **Authentication:** `API key HMAC`
 
-Turns the YES positions you hold in a neg-risk event into NO positions of the markets you choose. With one target, your YES set becomes NO of that market. With several targets, the action also spends USDC: `targetMarketIds.length * amount` of it. You must hold at least `amount` of the YES token of every market in the set that is not a target, and the targets must be fewer than the markets in the set.
+Turns the YES positions you hold in a neg-risk event into NO positions of the markets you choose. With one target, your YES set becomes NO of that market. With several targets, the action also spends USDC. Your wallet must hold `targetMarketIds.length * amount` of USDC, which is also what Hit approves, and the net USDC spent is `(targetMarketIds.length - 1) * amount`, so one target spends none, net. You must hold at least `amount` of the YES token of every market in the set that is not a target, and the targets must be fewer than the markets in the set.
 
 Request body:
 
@@ -374,7 +377,7 @@ Refusals specific to this route:
 | `400` | `convert_targets_too_many` | More than `40` targets. |
 | `400` | `invalid_convert_target` | A target is not an open market of the event, was already reported, is repeated, or the targets are every market in the YES set. |
 | `400` | `event_determined` | The event has a reported winner, so there is nothing to convert into. |
-| `503` | `usdc_unavailable` | Your USDC balance could not be read. Nothing was signed or sent, so the request can be sent again. |
+| `503` | `usdc_unavailable` | Your USDC balance could not be read. Nothing was signed or sent, so the request can be sent again. It carries no `Retry-After`. |
 
 ## UserPosition
 
