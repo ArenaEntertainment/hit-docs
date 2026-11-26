@@ -500,6 +500,10 @@ None of these means your order is invalid or your balance is insufficient. A gen
 
 An entry Hit could not check because of a fault on its side, such as a failed read of its market or of your wallet's code, carries `code: "check-unavailable"` inside the `201`. Nothing was created for that entry, so send that order again. Its `error` text can be `Internal server error`, and a re-send often clears the entry but not always: if the same order keeps coming back `check-unavailable`, report it to Hit.
 
+Sometimes Hit cannot say whether an order was created. `POST /orders` then answers `408`: the answer did not come back in time, the connection it went out on was lost, or Hit could not confirm whether it recorded the order. On `POST /orders/batch`, the entry carries `code: "unknown"`, or the whole request answers `408`. The order may exist, so re-send the identical body, with the same `salt`: an order that exists is returned rather than created again, and one that does not is created. A new `salt` is a different order, so do not rebuild the order to retry it. If the re-send itself gets an answer that says to retry, such as `code: "unknown"`, `engine-busy`, a `503` or a `408`, that answer is about that send only: send the identical body again until it succeeds or is refused for a reason that will not change on a retry.
+
+A repeat of an order that already exists, sent within 24 hours of placing it, answers with that order and its `status` now: `201` on `POST /orders`, and `success: true` with its `orderId` on a batch entry. The status can be any status, including `CANCELLED`, `EXECUTED` or `REJECTED`, so a successful repeat means the order exists, not that it is resting.
+
 ## List Orders
 
 ```bash
