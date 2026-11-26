@@ -206,6 +206,176 @@ Response type: `BatchMergeResponse`.
 | `marketId` | UUID string | Yes | Excluded market UUID. |
 | `reason` | enum string | Yes | `not-mergeable`, `only-one-side` or `not-binary`. |
 
+## Neg-Risk Position Actions
+
+These four routes act on your positions in a neg-risk event. Each one submits a single transaction from your wallet and answers `201` with `{ "txHash": "0x..." }`. The routes are on `/wallet`, not `/markets`.
+
+**Authentication:** `API key HMAC`
+
+Common behaviour:
+
+- `amount` is a positive integer string in raw token units, with no leading zeros and at most 78 digits. It applies to each token the action moves, not to a total.
+- A body with a malformed field, or with a property the route does not declare, is refused with a generic `400` that has no `code`.
+- A wallet with no address is refused before anything is read or signed.
+- Insufficient token holdings are refused with `400` before anything is signed.
+
+Refusals every route can return:
+
+| Status | `code` | Meaning | What to do |
+| --- | --- | --- | --- |
+| `400` | `would_revert` | The simulation of the action reverted, so nothing was sent. | Sending the same request again normally fails the same way. |
+| `409` | `outcome_unknown` | The transaction may have been sent. | Do not repeat the request without checking the receipt. |
+| `409` | `in_flight` | Another action for your wallet, or a redemption that may still land, is in progress. Nothing was sent. | Do not repeat the request without checking the receipt of the earlier action. |
+| `422` | `not_broadcast` | The action was refused before the send, for a reason with no code of its own. Nothing was sent. | The same request can be sent again. |
+| `422` | `too_large_for_one_transaction` | The action needs more gas than one transaction may use. Nothing was sent. | The same request is refused again. |
+| `503` | `yes_set_chain_unavailable` | The chain state the action depends on could not be read. Nothing was signed or sent. | The request can be sent again. |
+
+The refusals listed under each route are in addition to these.
+
+### Convert Positions
+
+```text
+POST /api/v1/wallet/convert-positions
+```
+
+**Authentication:** `API key HMAC`
+
+Converts your NO positions in several markets of one neg-risk event. The markets must all belong to the same neg-risk event, and you must hold at least `amount` of the NO token of every selected market.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketIds` | UUID string[] | Yes | Distinct market UUIDs whose NO positions are converted. Minimum `1`, maximum `256`. |
+| `amount` | string | Yes | Positive amount of each selected NO token, in raw integer units. |
+
+Request example:
+
+```json
+{
+  "marketIds": [
+    "0b6a8f3e-5d52-4b3c-9d3a-6f0c2e1a7b11",
+    "7c1d9e24-83a0-4f6e-b5a2-1d4e8c3f9a02"
+  ],
+  "amount": "1000000"
+}
+```
+
+Response type: `{ txHash: string }`.
+
+This route has no refusals of its own beyond the common ones and the `400` for an invalid selection: a market that does not exist, markets that do not belong to one neg-risk event, or less than `amount` held of a selected NO token.
+
+### Merge YES Set
+
+```text
+POST /api/v1/wallet/merge-yes-set
+```
+
+**Authentication:** `API key HMAC`
+
+Merges `amount` of every YES token of a neg-risk event that has not been reported NO back into USDC. You must hold at least `amount` of each of those YES tokens.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | UUID string | Yes | The neg-risk event whose YES set is merged. |
+| `amount` | string | Yes | Positive amount of each token in the set, in raw integer units. |
+
+Request example:
+
+```json
+{
+  "eventId": "3f2b7a90-1c4e-4d8b-a6f5-9e0d2c7b4a13",
+  "amount": "1000000"
+}
+```
+
+Response type: `{ txHash: string }`.
+
+Refusals specific to this route:
+
+| Status | `code` | Meaning |
+| --- | --- | --- |
+| `400` | `yes_set_actions_disabled` | The YES-set actions are switched off. |
+
+### Split YES Set
+
+```text
+POST /api/v1/wallet/split-yes-set
+```
+
+**Authentication:** `API key HMAC`
+
+Splits `amount` of USDC into `amount` of every YES token of a neg-risk event that has not been reported NO. Your wallet must hold at least `amount` of USDC.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | UUID string | Yes | The neg-risk event whose YES set the USDC is split into. |
+| `amount` | string | Yes | Positive amount of each token in the set, in raw integer units. |
+
+Request example:
+
+```json
+{
+  "eventId": "3f2b7a90-1c4e-4d8b-a6f5-9e0d2c7b4a13",
+  "amount": "1000000"
+}
+```
+
+Response type: `{ txHash: string }`.
+
+Refusals specific to this route:
+
+| Status | `code` | Meaning |
+| --- | --- | --- |
+| `400` | `yes_set_actions_disabled` | The YES-set actions are switched off. |
+| `400` | `insufficient_usdc` | Your wallet holds less USDC than `amount`. |
+| `503` | `usdc_unavailable` | Your USDC balance could not be read. Nothing was signed or sent, so the request can be sent again. |
+
+### Convert YES to NO
+
+```text
+POST /api/v1/wallet/convert-yes-to-no
+```
+
+**Authentication:** `API key HMAC`
+
+Turns the YES positions you hold in a neg-risk event into NO positions of the markets you choose. With one target, your YES set becomes NO of that market. With several targets, the action also spends USDC: `targetMarketIds.length * amount` of it. You must hold at least `amount` of the YES token of every market in the set that is not a target, and the targets must be fewer than the markets in the set.
+
+Request body:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | UUID string | Yes | The neg-risk event holding the positions. |
+| `targetMarketIds` | UUID string[] | Yes | Distinct UUIDs of open markets of the event whose NO positions you receive. At least `1`, at most `40`. |
+| `amount` | string | Yes | Positive amount of each token, in raw integer units. |
+
+Request example:
+
+```json
+{
+  "eventId": "3f2b7a90-1c4e-4d8b-a6f5-9e0d2c7b4a13",
+  "targetMarketIds": ["0b6a8f3e-5d52-4b3c-9d3a-6f0c2e1a7b11"],
+  "amount": "1000000"
+}
+```
+
+Response type: `{ txHash: string }`.
+
+Refusals specific to this route:
+
+| Status | `code` | Meaning |
+| --- | --- | --- |
+| `400` | `yes_set_actions_disabled` | The YES-set actions are switched off. |
+| `400` | `insufficient_usdc` | Your wallet holds less USDC than `targetMarketIds.length * amount`. |
+| `400` | `convert_targets_too_many` | More than `40` targets. |
+| `400` | `invalid_convert_target` | A target is not an open market of the event, was already reported, is repeated, or the targets are every market in the YES set. |
+| `400` | `event_determined` | The event has a reported winner, so there is nothing to convert into. |
+| `503` | `usdc_unavailable` | Your USDC balance could not be read. Nothing was signed or sent, so the request can be sent again. |
+
 ## UserPosition
 
 | Field | Type | Required | Description |
